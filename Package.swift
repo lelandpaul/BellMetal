@@ -11,6 +11,9 @@ let package = Package(
             name: "BellMetal",
             targets: ["BellMetal"]),
     ],
+    dependencies: [
+      .package(url:  "https://github.com/Quick/Nimble.git", from: "12.0.0"),
+    ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
@@ -18,6 +21,6 @@ let package = Package(
             name: "BellMetal"),
         .testTarget(
             name: "BellMetalTests",
-            dependencies: ["BellMetal"]),
+            dependencies: ["BellMetal", "Nimble"]),
     ]
 )
