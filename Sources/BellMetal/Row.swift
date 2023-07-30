@@ -108,11 +108,15 @@ extension Row {
 // This is basically a wrapper around Array<Row>, but gets
 // around some genericity issues.
 
-struct RowBlock<Stage: StageProtocol> {
+struct RowBlock<Stage: StageProtocol>: CustomStringConvertible {
   public var rows: [Row<Stage>]
   
   public var first: Row<Stage>? { rows.first }
   public var last: Row<Stage>? { rows.last }
+  
+  public var description: String {
+    rows.map({$0.description}).joined(separator: "\n")
+  }
   
   init(rows: ArraySlice<Row<Stage>>) {
     self.rows = []
