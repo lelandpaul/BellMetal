@@ -44,6 +44,7 @@ extension Row: ExpressibleByStringLiteral {
 }
 
 extension Row: Equatable { }
+extension Row: Hashable { }
 
 extension Row: Sequence {
   func makeIterator() -> IndexingIterator<Array<Bell>> {
@@ -118,7 +119,9 @@ struct RowBlock<Stage: StageProtocol>: CustomStringConvertible {
     rows.map({$0.description}).joined(separator: "\n")
   }
   
-  init(rows: ArraySlice<Row<Stage>>) {
+  public var count: Int { rows.count }
+  
+  init<T: Sequence>(rows: T) where T.Element == Row<Stage> {
     self.rows = []
     for row in rows {
       self.rows.append(row)
@@ -154,3 +157,5 @@ extension RowBlock {
     self.rows.append(contentsOf: newRows)
   }
 }
+
+extension RowBlock: Equatable { }

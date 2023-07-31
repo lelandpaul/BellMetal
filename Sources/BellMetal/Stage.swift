@@ -6,8 +6,14 @@ protocol StageProtocol {
 }
 
 extension StageProtocol {
+  static var bells: [Bell] {
+    Array(1...n).map { Bell(rawValue: $0)! }
+  }
   static var tenor: Bell {
     Bell(rawValue: n)! // Safe: stage ns are known in advance
+  }
+  static var nearTenor: Bell {
+    Bell(rawValue: n-1)!
   }
 }
 

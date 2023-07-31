@@ -28,4 +28,13 @@ final class RowTests: XCTestCase {
     expect(Row4.rounds()).to(equal(Row4("1234")))
     expect(RowT.rounds()).to(equal(RowT("1234567890ET")))
   }
+  
+  func testRowGeneration() {
+    let rows = Singles.rows.collect()
+    expect(Set(rows.rows).count).to(equal(6))
+    
+    let minimusLeadheads = RowGenerator(matching: Mask4("1xxx")).collect()
+    expect(Set(minimusLeadheads.rows).count).to(equal(6))
+    
+  }
 }

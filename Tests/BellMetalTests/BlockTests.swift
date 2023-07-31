@@ -25,7 +25,7 @@ final class BlockTests: XCTestCase {
   func testApplication() {
     let block: Block4 = "x14x14,12"
     let rows = block.evaluate(at: Row4.rounds())
-    let expectedRows: [Row4] = [
+    let expectedRows = RowBlock4(rows: [
       "2143",
       "2413",
       "4231",
@@ -34,7 +34,7 @@ final class BlockTests: XCTestCase {
       "3142",
       "1324",
       "1342",
-    ]
+    ])
     expect(rows).to(equal(expectedRows))
   }
 }
