@@ -150,7 +150,6 @@ class SearchState {
       for (key, _) in unparsedDict {
         guard let csleadclass = CSLeadClass(key)
         else { fatalError("found something we couldn't parse") }
-        guard CoreSeven.mainFour.contains(csleadclass.method) else { continue }
         results.append(csleadclass)
       }
       return Set(results)
@@ -190,7 +189,7 @@ extension SearchState {
       }
       // Try to get next step
       guard let nextStep = self.adjacentPossible[adjacentPossible.indices.last!].popLast(), // there is something in the possible
-            self.possibleAtw.isAtw, // ATW is still possible
+            self.possibleAtw.isAtwAgainst(actualAtw), // ATW is still possible
             self.actualAtw.isWithinLength // ATW is still possible
       else {
         // nothing doing
