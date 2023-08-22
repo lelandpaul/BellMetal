@@ -25,5 +25,6 @@ let package = Package(
         .testTarget(
             name: "BellMetalTests",
             dependencies: ["BellMetal", "Nimble"]),
+        .testTarget(name: "Scripts", dependencies: ["BellMetal"])
     ]
 )

@@ -1,13 +1,13 @@
 import Foundation
 
 /// A block of place notation, i.e. sequence of changes
-struct Block<Stage: StageProtocol>: CustomStringConvertible {
+public struct Block<Stage: StageProtocol>: CustomStringConvertible {
   static var stage: Int { Stage.n }
   let pn: String // the place notation for this block
   let changes: [Change<Stage>] // the changes
   let row: Row<Stage>
   
-  var description: String {
+  public var description: String {
     "<\(pn) -> \(row)>"
   }
   
@@ -60,7 +60,7 @@ extension Block {
 // MARK: - Various conformances
 
 extension Block: Equatable {
-  static func == (lhs: Block, rhs: Block) -> Bool {
+  public static func == (lhs: Block, rhs: Block) -> Bool {
     lhs.pn == rhs.pn &&
     lhs.changes == rhs.changes
   }
@@ -75,7 +75,7 @@ extension Block: ExpressibleByStringLiteral {
 // MARK: - Operators
 
 extension Block {
-  static public func *(lhs: Row<Stage>, rhs: Block<Stage>) -> Row<Stage> {
+  public static func *(lhs: Row<Stage>, rhs: Block<Stage>) -> Row<Stage> {
     lhs * rhs.row
   }
   
@@ -99,12 +99,25 @@ extension Block {
 // MARK: - Evaluation
 
 extension Block {
-  public func evaluate(at row: Row<Stage>) -> RowBlock<Stage> {
+  public enum EvalMode {
+    case keepInitial
+    case keepFinal
+    case keepBoth
+  }
+  
+  public func evaluate(at row: Row<Stage>, evalMode: EvalMode = .keepFinal) -> RowBlock<Stage> {
     var result = [row]
     for change in self.changes {
       result.append(result.last! * change)
     }
-    return RowBlock<Stage>(rows: result.dropFirst())
+    switch evalMode {
+    case .keepInitial:
+      return RowBlock<Stage>(rows: result.dropLast())
+    case .keepFinal:
+      return RowBlock<Stage>(rows: result.dropFirst())
+    case.keepBoth:
+      return RowBlock<Stage>(rows: result)
+    }
   }
   
   public func roundBlock(at row: Row<Stage> = Row<Stage>.rounds()) -> RowBlock<Stage> {
@@ -114,21 +127,27 @@ extension Block {
     }
     return rows
   }
+  
+  public func rowsWithTreble(at pos: Int) -> [Row<Stage>] {
+    guard pos <= Stage.n else { return [] }
+    return self.evaluate(at: Stage.rounds)
+      .filter { $0.position(of: .b1) == pos }
+  }
 }
 
 // MARK: - Aliases
 
-typealias Block3 = Block<Singles>
-typealias Block4 = Block<Minimus>
-typealias Block5 = Block<Doubles>
-typealias Block6 = Block<Minor>
-typealias Block7 = Block<Triples>
-typealias Block8 = Block<Major>
-typealias Block9 = Block<Caters>
-typealias Block0 = Block<Royal>
-typealias BlockE = Block<Cinques>
-typealias BlockT = Block<Maximus>
-typealias BlockA = Block<Thirteen>
-typealias BlockB = Block<Fourteen>
-typealias BlockC = Block<Fifteen>
-typealias BlockD = Block<Sixteen>
+public typealias Block3 = Block<Singles>
+public typealias Block4 = Block<Minimus>
+public typealias Block5 = Block<Doubles>
+public typealias Block6 = Block<Minor>
+public typealias Block7 = Block<Triples>
+public typealias Block8 = Block<Major>
+public typealias Block9 = Block<Caters>
+public typealias Block0 = Block<Royal>
+public typealias BlockE = Block<Cinques>
+public typealias BlockT = Block<Maximus>
+public typealias BlockA = Block<Thirteen>
+public typealias BlockB = Block<Fourteen>
+public typealias BlockC = Block<Fifteen>
+public typealias BlockD = Block<Sixteen>

@@ -1,7 +1,7 @@
 import Foundation
 
-enum Bell: Int, Comparable, CustomStringConvertible {
-  static func < (lhs: Bell, rhs: Bell) -> Bool {
+public enum Bell: Int, Comparable, CustomStringConvertible {
+  public static func < (lhs: Bell, rhs: Bell) -> Bool {
     lhs.rawValue < rhs.rawValue
   }
   
@@ -30,7 +30,7 @@ enum Bell: Int, Comparable, CustomStringConvertible {
     }
   }
   
-  var description: String {
+  public var description: String {
     switch self {
     case .b1:
       "1"

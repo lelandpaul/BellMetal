@@ -1,11 +1,11 @@
 import Foundation
 
-struct Row<Stage: StageProtocol>: CustomStringConvertible {
+public struct Row<Stage: StageProtocol>: CustomStringConvertible {
   static var stage: Int { Stage.n }
   
   private let _row: [Bell]
   
-  var description: String {
+  public var description: String {
     self._row.map({ $0.description }).joined()
   }
   
@@ -47,42 +47,42 @@ extension Row: Equatable { }
 extension Row: Hashable { }
 
 extension Row: Sequence {
-  func makeIterator() -> IndexingIterator<Array<Bell>> {
+  public func makeIterator() -> IndexingIterator<Array<Bell>> {
     return _row.makeIterator()
   }
 }
 
 // MARK: - Aliases
 
-typealias Row3 = Row<Singles>
-typealias Row4 = Row<Minimus>
-typealias Row5 = Row<Doubles>
-typealias Row6 = Row<Minor>
-typealias Row7 = Row<Triples>
-typealias Row8 = Row<Major>
-typealias Row9 = Row<Caters>
-typealias Row0 = Row<Royal>
-typealias RowE = Row<Cinques>
-typealias RowT = Row<Maximus>
-typealias RowA = Row<Thirteen>
-typealias RowB = Row<Fourteen>
-typealias RowC = Row<Fifteen>
-typealias RowD = Row<Sixteen>
+public typealias Row3 = Row<Singles>
+public typealias Row4 = Row<Minimus>
+public typealias Row5 = Row<Doubles>
+public typealias Row6 = Row<Minor>
+public typealias Row7 = Row<Triples>
+public typealias Row8 = Row<Major>
+public typealias Row9 = Row<Caters>
+public typealias Row0 = Row<Royal>
+public typealias RowE = Row<Cinques>
+public typealias RowT = Row<Maximus>
+public typealias RowA = Row<Thirteen>
+public typealias RowB = Row<Fourteen>
+public typealias RowC = Row<Fifteen>
+public typealias RowD = Row<Sixteen>
 
 // MARK: - Operators
 
 extension Row {
-  static func rounds() -> Row<Stage> {
+  public static func rounds() -> Row<Stage> {
     let seq = Array(1...stage).map { Bell(rawValue: $0)! }
     return try! Row<Stage>(seq)
   }
   
-  static func *(lhs: Row<Stage>, rhs: Row<Stage>) -> Row<Stage> {
+  public static func *(lhs: Row<Stage>, rhs: Row<Stage>) -> Row<Stage> {
     let internalRow = lhs._row[rhs._row]
     return try! Row<Stage>(internalRow)
   }
   
-  static func ^(lhs: Row<Stage>, rhs: Int) -> Row<Stage> {
+  public static func ^(lhs: Row<Stage>, rhs: Int) -> Row<Stage> {
     guard lhs != rounds() else { return lhs }
     switch rhs {
     case 0:
@@ -109,7 +109,7 @@ extension Row {
 // This is basically a wrapper around Array<Row>, but gets
 // around some genericity issues.
 
-struct RowBlock<Stage: StageProtocol>: CustomStringConvertible {
+public struct RowBlock<Stage: StageProtocol>: CustomStringConvertible {
   public var rows: [Row<Stage>]
   
   public var first: Row<Stage>? { rows.first }
@@ -130,7 +130,7 @@ struct RowBlock<Stage: StageProtocol>: CustomStringConvertible {
 }
 
 extension RowBlock: Sequence {
-  func makeIterator() -> IndexingIterator<Array<Row<Stage>>> {
+  public func makeIterator() -> IndexingIterator<Array<Row<Stage>>> {
     return rows.makeIterator()
   }
 }
@@ -159,3 +159,27 @@ extension RowBlock {
 }
 
 extension RowBlock: Equatable { }
+
+extension RowBlock {
+  public var isTrue: Bool {
+    var set = Set<Element>()
+    for row in self.rows {
+      if set.contains(row) { return false }
+      set.insert(row)
+    }
+    return true
+  }
+  
+  public func isTrue(against block: Self) -> Bool {
+    var set = Set<Element>()
+    for row in self.rows {
+      if set.contains(row) { return false }
+      set.insert(row)
+    }
+    for row in block.rows {
+      if set.contains(row) { return false }
+      set.insert(row)
+    }
+    return true
+  }
+}

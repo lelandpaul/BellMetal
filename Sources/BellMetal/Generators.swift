@@ -2,13 +2,13 @@ import Foundation
 import Combinatorics
 
 extension StageProtocol {
-  static var rounds: Row<Self> { Row<Self>.rounds() }
+  public static var rounds: Row<Self> { Row<Self>.rounds() }
   
-  static var rows: RowGenerator<Self> { RowGenerator() }
+  public static var rows: RowGenerator<Self> { RowGenerator() }
 }
 
-struct RowGenerator<Stage: StageProtocol>: Sequence, IteratorProtocol {
-  typealias Element = Row<Stage>
+public struct RowGenerator<Stage: StageProtocol>: Sequence, IteratorProtocol {
+  public typealias Element = Row<Stage>
   
   let permutations: Permutation<Bell>
   var mask: Mask<Stage>? = nil
@@ -23,7 +23,7 @@ struct RowGenerator<Stage: StageProtocol>: Sequence, IteratorProtocol {
     self.permutations = Permutation(of: mask.unfixedBells)
   }
   
-  mutating func next() -> Row<Stage>? {
+  public mutating func next() -> Row<Stage>? {
     defer { current_pos += 1 }
     if current_pos >= permutations.count {
       return nil
@@ -44,14 +44,14 @@ struct RowGenerator<Stage: StageProtocol>: Sequence, IteratorProtocol {
   }
 }
 
-struct ChainedGenerators<Generator: IteratorProtocol>: Sequence, IteratorProtocol {
-  typealias Element = Generator.Element
+public struct ChainedGenerators<Generator: IteratorProtocol>: Sequence, IteratorProtocol {
+  public typealias Element = Generator.Element
   var generators: [Generator]
   var onDeckGenerator: Generator?
   
-  mutating func next() -> Element? {
+  public mutating func next() -> Element? {
     guard onDeckGenerator != nil || !generators.isEmpty else { return nil }
-    var nextItem = onDeckGenerator?.next()
+    let nextItem = onDeckGenerator?.next()
     if nextItem == nil && !generators.isEmpty {
       onDeckGenerator = generators.removeFirst()
       return onDeckGenerator?.next()

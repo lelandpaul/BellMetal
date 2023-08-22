@@ -1,6 +1,6 @@
 import Foundation
 
-struct Mask<Stage: StageProtocol> {
+public struct Mask<Stage: StageProtocol> {
   let bellToPosition: [Bell : Int]
   let positionToBell: [Int : Bell]
   
@@ -63,17 +63,17 @@ extension Mask: ExpressibleByStringLiteral {
 
 extension Mask: Hashable, Equatable { }
 
-typealias Mask3 = Mask<Singles>
-typealias Mask4 = Mask<Minimus>
-typealias Mask5 = Mask<Doubles>
-typealias Mask6 = Mask<Minor>
-typealias Mask7 = Mask<Triples>
-typealias Mask8 = Mask<Major>
-typealias Mask9 = Mask<Caters>
-typealias Mask0 = Mask<Royal>
-typealias MaskE = Mask<Cinques>
-typealias MaskT = Mask<Maximus>
-typealias MaskA = Mask<Thirteen>
-typealias MaskB = Mask<Fourteen>
-typealias MaskC = Mask<Fifteen>
-typealias MaskD = Mask<Sixteen>
+public typealias Mask3 = Mask<Singles>
+public typealias Mask4 = Mask<Minimus>
+public typealias Mask5 = Mask<Doubles>
+public typealias Mask6 = Mask<Minor>
+public typealias Mask7 = Mask<Triples>
+public typealias Mask8 = Mask<Major>
+public typealias Mask9 = Mask<Caters>
+public typealias Mask0 = Mask<Royal>
+public typealias MaskE = Mask<Cinques>
+public typealias MaskT = Mask<Maximus>
+public typealias MaskA = Mask<Thirteen>
+public typealias MaskB = Mask<Fourteen>
+public typealias MaskC = Mask<Fifteen>
+public typealias MaskD = Mask<Sixteen>

@@ -2,7 +2,7 @@ import Foundation
 
 /// A single change (i.e. a permutation composed
 /// of disjoint adjacent transpositions).
-struct Change<Stage: StageProtocol> {
+public struct Change<Stage: StageProtocol> {
   static var stage: Int { Stage.n }
   let pn: String // the place notation for this place
   let places: [Int] // all of the places made; [0] if no places are made
@@ -60,7 +60,7 @@ struct Change<Stage: StageProtocol> {
 // MARK: - Conformance
 
 extension Change: Equatable {
-  static func == (lhs: Change, rhs: Change) -> Bool {
+  public static func == (lhs: Change, rhs: Change) -> Bool {
     lhs.pn == rhs.pn &&
     lhs.places == rhs.places
   }
