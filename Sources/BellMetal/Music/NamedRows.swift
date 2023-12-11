@@ -40,17 +40,19 @@ extension NamedRow {
     case .princes:
       return Stage.rounds * Change(places: Array(3...Stage.n)) * kings
     case .princesses:
-      return Stage.rounds * Change(places: Array(3...Stage.n)) * queens
+      let half = (Stage.n + 1) / 2
+      return queens * Change(places: Array(1..<half) + Array(half+2...Stage.n))
     case .queens:
       return queens
     case .rounds:
       return Stage.rounds
     case .tittums:
-      let half = Stage.n / 2
-      let upwards = Array((1...half))
-      let downwards = Array((half+1...Stage.n))
-      return upwards.interleave(with: downwards).toRow()
+      let half = (Stage.n + 1) / 2
+      let upper = Array((1...half))
+      let lower = Array((half+1...Stage.n))
+      return upper.interleave(with: lower).toRow()
     case .whittingtons:
+      guard Stage.n > 5, Stage.n < 11 else { return nil }
       return ([1,2] + Array(3...Stage.n)
         .partitionMap(on: { $0.isMultiple(of: 2) }) { evens, odds in
           odds.reversed() + evens

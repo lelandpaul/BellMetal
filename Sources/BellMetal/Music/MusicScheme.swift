@@ -23,7 +23,7 @@ public struct MusicScheme<Stage: StageProtocol> {
   func score(_ row: Row<Stage>) -> Int {
     scoreDetails(row)
       .reduce(into: 0) { partialResult, element in
-        partialResult = element.key.weight * element.value
+        partialResult += element.key.weight * element.value
       }
   }
   
@@ -46,7 +46,7 @@ public struct MusicScheme<Stage: StageProtocol> {
   func score(_ rows: RowBlock<Stage>, backstrokeStart: Bool = false) -> Int {
     scoreDetails(rows, backstrokeStart: backstrokeStart)
       .reduce(into: 0) { partialResult, element in
-        partialResult = element.key.weight * element.value
+        partialResult += element.key.weight * element.value
       }
   }
 }

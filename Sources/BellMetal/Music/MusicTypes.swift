@@ -80,8 +80,8 @@ extension MusicType {
     }
   }
   
-  enum MaskGenerator {
-    static func fiveSix() -> [any MusicMask<Stage>] {
+  package enum MaskGenerator {
+    static func fiveSix() -> [HalfPullMusicMask<Stage>] {
       guard Stage.n > 6 else { return [] }
       let front = "xxxx"
       let back = (7...Stage.n)
@@ -93,7 +93,7 @@ extension MusicType {
       ].map { HalfPullMusicMask($0) }
     }
     
-    static func run(length: Int) -> [any MusicMask<Stage>] {
+    static func run(length: Int) -> [HalfPullMusicMask<Stage>] {
       guard length < Stage.n,
             length >= 4
       else { return [] }
@@ -116,7 +116,7 @@ extension MusicType {
       return masks
     }
     
-    static func cru() -> [any MusicMask<Stage>] {
+    static func cru() -> [HalfPullMusicMask<Stage>] {
       guard Stage.self == Major.self else { return [] }
       return [
         HalfPullMusicMask("xxxx5678"),
@@ -134,15 +134,15 @@ extension MusicType {
       ]
     }
     
-    static func namedRows() -> [any MusicMask<Stage>] {
+    static func namedRows() -> [HalfPullMusicMask<Stage>] {
       NamedRow<Stage>.allCases
         .compactMap { Mask<Stage>($0.row) }
         .map { HalfPullMusicMask($0) }
     }
     
-    static func wraps(of row: Row<Stage>?) -> [any MusicMask<Stage>] {
+    static func wraps(of row: Row<Stage>?) -> [WholePullMusicMask<Stage>] {
       guard let row else { return [] }
-      return (1...Stage.n).map { i in
+      return (1...Stage.n-1).map { i in
         let prefix = Array(repeating: "x", count: i).joined()
         let suffix = Array(repeating: "x", count: Stage.n - i).joined()
         let rowA = row.prefix(Stage.n - i).map({ $0.description }).joined()
@@ -151,7 +151,7 @@ extension MusicType {
       }
     }
     
-    static func wraps() -> [any MusicMask<Stage>] {
+    static func wraps() -> [WholePullMusicMask<Stage>] {
       [NamedRow<Stage>.rounds,
        NamedRow<Stage>.backrounds,
        NamedRow<Stage>.queens,
@@ -161,7 +161,7 @@ extension MusicType {
         }
     }
     
-    static func tenorsReversed() -> [any MusicMask<Stage>] {
+    static func tenorsReversed() -> [WholePullMusicMask<Stage>] {
       [
         WholePullMusicMask(
           back: Mask(
@@ -174,7 +174,7 @@ extension MusicType {
     
     // Hack: Lets us use the string-literal representations of the masks
     // in the inner function.
-    static func namedRowCombos() -> [any MusicMask<Stage>] {
+    static func namedRowCombos() -> [HalfPullMusicMask<Stage>] {
       return namedRowCombosInner()
     }
     

@@ -103,3 +103,15 @@ public struct WholePullMusicMask<Stage: StageProtocol>: MusicMask {
     }
   }
 }
+
+extension WholePullMusicMask: ExpressibleByStringLiteral {
+  public init(stringLiteral value: StringLiteralType) {
+    let pieces = value.split(separator: "/")
+    guard pieces.count == 2,
+          let hand = pieces.first,
+          let back = pieces.last
+    else { fatalError("Invalid WholePullMusicMask string literal: \(value)")}
+    self.handMask = Mask(stringLiteral: String(hand))
+    self.backMask = Mask(stringLiteral: String(back))
+  }
+}
