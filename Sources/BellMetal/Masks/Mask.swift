@@ -1,6 +1,7 @@
 import Foundation
 
 public struct Mask<Stage: StageProtocol> {
+  let string: String
   let bellToPosition: [Bell : Int]
   let positionToBell: [Int : Bell]
   
@@ -26,6 +27,20 @@ public struct Mask<Stage: StageProtocol> {
       b2P[bell] = i + 1
       p2B[i+1] = bell
     }
+    self.string = mask
+    self.bellToPosition = b2P
+    self.positionToBell = p2B
+  }
+  
+  init?(_ row: Row<Stage>?) {
+    guard let row else { return nil }
+    var b2P = [Bell : Int]()
+    var p2B = [Int : Bell]()
+    for (i, bell) in row.enumerated() {
+      b2P[bell] = i + 1
+      p2B[i+1] = bell
+    }
+    self.string = row.description
     self.bellToPosition = b2P
     self.positionToBell = p2B
   }
@@ -55,6 +70,12 @@ public struct Mask<Stage: StageProtocol> {
   }
 }
 
+extension Mask: CustomDebugStringConvertible {
+  public var debugDescription: String {
+    "Mask\(Stage.n)(\(self.string))"
+  }
+}
+
 extension Mask: ExpressibleByStringLiteral {
   public init(stringLiteral value: String) {
     self.init(value)
@@ -77,3 +98,13 @@ public typealias MaskA = Mask<Thirteen>
 public typealias MaskB = Mask<Fourteen>
 public typealias MaskC = Mask<Fifteen>
 public typealias MaskD = Mask<Sixteen>
+
+extension Mask {
+  static func empty() -> Self {
+    .init(Array(repeating: "x", count: Stage.n).joined())
+  }
+  
+  var isEmpty: Bool {
+    self.bellToPosition.isEmpty
+  }
+}

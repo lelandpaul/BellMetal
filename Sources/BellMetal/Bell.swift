@@ -29,7 +29,7 @@ public enum Bell: Int, Comparable, CustomStringConvertible {
     default: throw BellMetalError.invalidBell
     }
   }
-  
+
   public var description: String {
     switch self {
     case .b1:

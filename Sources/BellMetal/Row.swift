@@ -3,7 +3,7 @@ import Foundation
 public struct Row<Stage: StageProtocol>: CustomStringConvertible {
   static var stage: Int { Stage.n }
   
-  private let _row: [Bell]
+  package let _row: [Bell]
   
   public var description: String {
     self._row.map({ $0.description }).joined()
@@ -105,6 +105,22 @@ extension Row {
   }
 }
 
+extension [Bell] {
+  public func toRow<Stage: StageProtocol>() -> Row<Stage> {
+    do {
+      return try Row(self)
+    } catch {
+      fatalError("Invalid row.")
+    }
+  }
+}
+
+extension [Int] {
+  public func toRow<Stage: StageProtocol>() -> Row<Stage> {
+    return self.compactMap { Bell(rawValue: $0) }.toRow()
+  }
+}
+
 // MARK: - RowBlock
 // This is basically a wrapper around Array<Row>, but gets
 // around some genericity issues.
@@ -183,3 +199,61 @@ extension RowBlock {
     return true
   }
 }
+
+// MARK: - Whole Pulls
+
+struct WholePull<Stage: StageProtocol> {
+  let hand: Row<Stage>?
+  let back: Row<Stage>?
+  
+  init(hand: Row<Stage>?, back: Row<Stage>?) {
+    guard hand != nil || back != nil else {
+      fatalError("WholePull must have at least one row.")
+    }
+    self.hand = hand
+    self.back = back
+  }
+}
+
+extension RowBlock {
+  func wholePulls(backstrokeStart: Bool = false) -> [WholePull<Stage>] {
+    var result = [WholePull<Stage>]()
+    var remaining = self.rows
+    if backstrokeStart {
+      let start = remaining.removeFirst()
+      result.append(WholePull(hand: nil, back: start))
+    }
+    while remaining.count > 1 {
+      let hand = remaining.removeFirst()
+      let back = remaining.removeFirst()
+      result.append(WholePull(hand: hand, back: back))
+    }
+    if remaining.count > 0 {
+      result.append(WholePull(hand: remaining.first, back: nil))
+    }
+    return result
+  }
+}
+
+// MARK: - Music
+
+extension Row {
+  public var musicScore: Int {
+    Stage.musicScheme.score(self)
+  }
+  
+  public var musicDetails: [MusicType<Stage>: Int] {
+    Stage.musicScheme.scoreDetails(self)
+  }
+}
+
+extension RowBlock {
+  public func musicScore(backstrokeStart: Bool = false) -> Int {
+    Stage.musicScheme.score(self, backstrokeStart: backstrokeStart)
+  }
+  
+  public func musicDetails(backstrokeStart: Bool = false) -> [MusicType<Stage>: Int] {
+    Stage.musicScheme.scoreDetails(self, backstrokeStart: backstrokeStart)
+  }
+}
+

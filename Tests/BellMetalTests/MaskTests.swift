@@ -3,6 +3,12 @@ import Nimble
 @testable import BellMetal
 
 final class MaskTests: XCTestCase {
+  
+  func testEquality() {
+    expect(Mask6("xxx456"))
+      .to(equal(Mask("xxx456")))
+  }
+  
   func testMatching() {
     let mask: Mask6 = "1x6xxx"
     expect(mask.matches(Row6("126345"))).to(beTrue())
