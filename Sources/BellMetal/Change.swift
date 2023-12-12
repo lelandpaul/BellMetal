@@ -74,20 +74,20 @@ extension Change: ExpressibleByStringLiteral {
 
 // MARK: - Aliases
 
-typealias Change3 = Change<Singles>
-typealias Change4 = Change<Minimus>
-typealias Change5 = Change<Doubles>
-typealias Change6 = Change<Minor>
-typealias Change7 = Change<Triples>
-typealias Change8 = Change<Major>
-typealias Change9 = Change<Caters>
-typealias Change0 = Change<Royal>
-typealias ChangeE = Change<Cinques>
-typealias ChangeT = Change<Maximus>
-typealias ChangeA = Change<Thirteen>
-typealias ChangeB = Change<Fourteen>
-typealias ChangeC = Change<Fifteen>
-typealias ChangeD = Change<Sixteen>
+public typealias Change3 = Change<Singles>
+public typealias Change4 = Change<Minimus>
+public typealias Change5 = Change<Doubles>
+public typealias Change6 = Change<Minor>
+public typealias Change7 = Change<Triples>
+public typealias Change8 = Change<Major>
+public typealias Change9 = Change<Caters>
+public typealias Change0 = Change<Royal>
+public typealias ChangeE = Change<Cinques>
+public typealias ChangeT = Change<Maximus>
+public typealias ChangeA = Change<Thirteen>
+public typealias ChangeB = Change<Fourteen>
+public typealias ChangeC = Change<Fifteen>
+public typealias ChangeD = Change<Sixteen>
 
 // MARK: - Operators
 
