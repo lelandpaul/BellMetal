@@ -14,11 +14,11 @@ public struct RowGenerator<Stage: StageProtocol>: Sequence, IteratorProtocol {
   var mask: Mask<Stage>? = nil
   var current_pos = 0
   
-  init() {
+  public init() {
     self.permutations = Permutation(of: Stage.bells)
   }
   
-  init(matching mask: Mask<Stage>) {
+  public init(matching mask: Mask<Stage>) {
     self.mask = mask
     self.permutations = Permutation(of: mask.unfixedBells)
   }
