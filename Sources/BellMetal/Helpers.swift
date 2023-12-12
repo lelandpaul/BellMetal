@@ -5,6 +5,10 @@ extension Row {
     self.position(of: .b1) == 1
   }
   
+  public var isPbLeadhead: Bool {
+    Stage.pbLeadheads.contains(self)
+  }
+  
   public var isTenorsTogether: Bool? {
     guard Stage.n >= 8 else { return nil }
     guard self.isLeadHead else { return nil }
@@ -31,7 +35,6 @@ extension Array {
   }
 }
 
-@available(macOS 10.15.0, *)
 extension StageProtocol {
   static public var leadheads: RowGenerator<Self> {
     let positions = ["1"] + Array(repeating: "x", count: Self.n)
