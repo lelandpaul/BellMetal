@@ -137,7 +137,7 @@ public struct RowBlock<Stage: StageProtocol>: CustomStringConvertible {
   
   public var count: Int { rows.count }
   
-  init<T: Sequence>(rows: T) where T.Element == Row<Stage> {
+  public init<T: Sequence>(rows: T) where T.Element == Row<Stage> {
     self.rows = []
     for row in rows {
       self.rows.append(row)
@@ -202,7 +202,7 @@ extension RowBlock {
 
 // MARK: - Whole Pulls
 
-struct WholePull<Stage: StageProtocol> {
+public struct WholePull<Stage: StageProtocol> {
   let hand: Row<Stage>?
   let back: Row<Stage>?
   

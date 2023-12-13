@@ -1,7 +1,7 @@
 import Foundation
 
 
-protocol MusicMask<Stage>: Equatable, Hashable {
+public protocol MusicMask<Stage>: Equatable, Hashable {
   associatedtype Stage: StageProtocol
   
   /// Returns a match score for a single row.
@@ -29,7 +29,7 @@ protocol MusicMask<Stage>: Equatable, Hashable {
 }
 
 public struct HalfPullMusicMask<Stage: StageProtocol>: MusicMask {
-  typealias Stage = Stage
+  public typealias Stage = Stage
   
   let mask: Mask<Stage>
   
@@ -41,15 +41,15 @@ public struct HalfPullMusicMask<Stage: StageProtocol>: MusicMask {
     self.mask = Mask<Stage>(string)
   }
   
-  func matches(_ row: Row<Stage>) -> Int {
+  public func matches(_ row: Row<Stage>) -> Int {
     mask.matches(row) ? 1 : 0
   }
   
-  func matches(hand: Row<Stage>, back: Row<Stage>) -> Int {
+  public func matches(hand: Row<Stage>, back: Row<Stage>) -> Int {
     matches(hand) + matches(back)
   }
   
-  func matches(_ wholePull: WholePull<Stage>) -> Int {
+  public func matches(_ wholePull: WholePull<Stage>) -> Int {
     let handMatch = if let hRow = wholePull.hand {
       matches(hRow)
     } else { 0 }
@@ -67,7 +67,7 @@ extension HalfPullMusicMask: ExpressibleByStringLiteral {
 }
 
 public struct WholePullMusicMask<Stage: StageProtocol>: MusicMask {
-  typealias Stage = Stage
+  public typealias Stage = Stage
   
   let handMask: Mask<Stage>
   let backMask: Mask<Stage>
@@ -78,9 +78,9 @@ public struct WholePullMusicMask<Stage: StageProtocol>: MusicMask {
   }
   
   // Always 0: we can only match if we know parity
-  func matches(_ row: Row<Stage>) -> Int { 0 }
+  public func matches(_ row: Row<Stage>) -> Int { 0 }
   
-  func matches(hand: Row<Stage>, back: Row<Stage>) -> Int {
+  public func matches(hand: Row<Stage>, back: Row<Stage>) -> Int {
     (handMask.matches(hand) && backMask.matches(back)) ? 1 : 0
   }
   
@@ -94,7 +94,7 @@ public struct WholePullMusicMask<Stage: StageProtocol>: MusicMask {
     return backMask.matches(back)
   }
   
-  func matches(_ wholePull: WholePull<Stage>) -> Int {
+  public func matches(_ wholePull: WholePull<Stage>) -> Int {
     if matchesAt(hand: wholePull.hand),
        matchesAt(back: wholePull.back) {
       return 1

@@ -92,15 +92,26 @@ public typealias ChangeD = Change<Sixteen>
 // MARK: - Operators
 
 extension Change {
-  static func *(lhs: Row<Stage>, rhs: Change<Stage>) -> Row<Stage> {
+  public static func *(lhs: Row<Stage>, rhs: Change<Stage>) -> Row<Stage> {
     lhs * rhs.row
   }
   
-  static func *(lhs: Change<Stage>, rhs: Change<Stage>) -> Row<Stage> {
+  public static func *(lhs: Change<Stage>, rhs: Change<Stage>) -> Row<Stage> {
     lhs.row * rhs.row
   }
   
-  static func +(lhs: Change<Stage>, rhs: Change<Stage>) -> Block<Stage> {
+  public static func +(lhs: Change<Stage>, rhs: Change<Stage>) -> Block<Stage> {
     Block<Stage>(pn: lhs.pn + rhs.pn)
+  }
+}
+
+extension Change {
+  public func isDisjoint(with other: Change<Stage>) -> Bool {
+    for p in places {
+      if other.places.contains(p) {
+        return false
+      }
+    }
+    return true
   }
 }

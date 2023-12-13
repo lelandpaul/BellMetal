@@ -3,9 +3,9 @@ import Foundation
 /// A block of place notation, i.e. sequence of changes
 public struct Block<Stage: StageProtocol>: CustomStringConvertible {
   static var stage: Int { Stage.n }
-  let pn: String // the place notation for this block
-  let changes: [Change<Stage>] // the changes
-  let row: Row<Stage>
+  public let pn: String // the place notation for this block
+  public let changes: [Change<Stage>] // the changes
+  public let row: Row<Stage>
   
   public var description: String {
     "<\(pn) -> \(row)>"
@@ -13,9 +13,15 @@ public struct Block<Stage: StageProtocol>: CustomStringConvertible {
   
   /// Initialize from place notation
   /// - Parameter pn: place notation
-  init(pn: String) {
+  public init(pn: String) {
     self.pn = pn
     self.changes = Self.splitPn(pn).map { Change(pn: $0) }
+    self.row = changes.reduce(into: Row<Stage>.rounds()) { $0 = $0 * $1 }
+  }
+  
+  public init(changes: [Change<Stage>]) {
+    self.changes = changes
+    self.pn = changes.map({ $0.pn }).joined(separator: ".")
     self.row = changes.reduce(into: Row<Stage>.rounds()) { $0 = $0 * $1 }
   }
 }
