@@ -72,6 +72,8 @@ extension Change: ExpressibleByStringLiteral {
   }
 }
 
+extension Change: Hashable { }
+
 // MARK: - Aliases
 
 public typealias Change3 = Change<Singles>

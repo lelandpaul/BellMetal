@@ -139,6 +139,23 @@ extension Block {
     return self.evaluate(at: Stage.rounds)
       .filter { $0.position(of: .b1) == pos }
   }
+  
+  /// Generates the line traced by a bell starting
+  /// in a given position under this block.
+  /// - Parameter bell: The starting position
+  /// - Returns: A sequence representing the line (inclusive
+  ///   of starting and ending positions)
+  public func lineFrom(_ bell: Int, leads: Int = 1)
+    -> [Int]
+  {
+    var result = [bell]
+    for _ in 0 ..< leads {
+      for change in changes {
+        result.append(change.apply(result.last!))
+      }
+    }
+    return result
+  }
 }
 
 // MARK: - Aliases

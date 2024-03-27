@@ -198,6 +198,10 @@ extension RowBlock {
     }
     return true
   }
+  
+  public static func + (lhs: Self, rhs: Self) -> Self {
+    return Self(rows: lhs.rows + rhs.rows)
+  }
 }
 
 // MARK: - Whole Pulls
