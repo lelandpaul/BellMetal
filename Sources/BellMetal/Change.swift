@@ -47,7 +47,7 @@ public struct Change<Stage: StageProtocol> {
   /// Where does this change move the bell in a given place?
   /// - Parameter position: The starting place
   /// - Returns: The ending place
-  private func apply(_ position: Int) -> Int {
+  public func apply(_ position: Int) -> Int {
     if places.contains(position) {
       return position
     }
