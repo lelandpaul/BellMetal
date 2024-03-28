@@ -35,6 +35,11 @@ public struct Row<Stage: StageProtocol>: CustomStringConvertible {
     }
     return pos + 1
   }
+  
+  public subscript(_ i: Int) -> Bell? {
+    guard i >= 1, i <= Self.stage else { return nil }
+    return _row[i-1]
+  }
 }
 
 extension Row: ExpressibleByStringLiteral {

@@ -78,6 +78,8 @@ extension Block: ExpressibleByStringLiteral {
   }
 }
 
+extension Block: Hashable { }
+
 // MARK: - Operators
 
 extension Block {
@@ -90,11 +92,11 @@ extension Block {
   }
   
   static public func +(lhs: Block<Stage>, rhs: Block<Stage>) -> Block<Stage> {
-    Block<Stage>(pn: lhs.pn + rhs.pn)
+    Block<Stage>(pn: lhs.pn + "." + rhs.pn)
   }
   
   static public func +(lhs: Block<Stage>, rhs: Change<Stage>) -> Block<Stage> {
-    Block<Stage>(pn: lhs.pn + rhs.pn)
+    Block<Stage>(pn: lhs.pn + "." + rhs.pn)
   }
   
   static public func +(lhs: Change<Stage>, rhs: Block<Stage>) -> Block<Stage> {
