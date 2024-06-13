@@ -1,7 +1,7 @@
 import Testing
 @testable import BellMetal
 
-@Suite("Music Generator Tests")
+@Suite("Music generators")
 struct MusicGeneratorTests {
   typealias GenDoubles = MusicType<Doubles>.MaskGenerator
   typealias GenMajor = MusicType<Major>.MaskGenerator

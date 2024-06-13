@@ -9,7 +9,7 @@ public struct Row<Stage: StageProtocol>: CustomStringConvertible {
     self._row.map({ $0.description }).joined()
   }
   
-  init(_ row: [Bell]) throws {
+  init!(_ row: [Bell]) throws {
     guard
       row.min() == .b1,
       let tenor = row.max(),
@@ -19,7 +19,7 @@ public struct Row<Stage: StageProtocol>: CustomStringConvertible {
     self._row = row
   }
   
-  init!(_ row: String) throws {
+  init!(row: String) throws {
     let parsedRow: [Bell]
     do {
       parsedRow = try row.map { try Bell.from($0) }
@@ -29,9 +29,9 @@ public struct Row<Stage: StageProtocol>: CustomStringConvertible {
     try self.init(parsedRow)
   }
   
-  public func position(of bell: Bell) -> Int {
+  public func position(of bell: Bell) -> Int? {
     guard let pos = _row.firstIndex(of: bell) else {
-      fatalError("Tried to find position of bell \(bell) in a row of stage \(Stage.description)")
+      return nil
     }
     return pos + 1
   }
@@ -44,7 +44,11 @@ public struct Row<Stage: StageProtocol>: CustomStringConvertible {
 
 extension Row: ExpressibleByStringLiteral {
   public init(stringLiteral value: String) {
-    try! self.init(value)
+    do {
+      try self.init(row: value)
+    } catch {
+      fatalError("Bad string literal for Row<\(Self.stage.description)>: \(value)")
+    }
   }
 }
 
@@ -111,17 +115,13 @@ extension Row {
 }
 
 extension [Bell] {
-  public func toRow<Stage: StageProtocol>() -> Row<Stage> {
-    do {
-      return try Row(self)
-    } catch {
-      fatalError("Invalid row.")
-    }
+  public func toRow<Stage: StageProtocol>() -> Row<Stage>? {
+    try? Row(self)
   }
 }
 
 extension [Int] {
-  public func toRow<Stage: StageProtocol>() -> Row<Stage> {
+  public func toRow<Stage: StageProtocol>() -> Row<Stage>? {
     return self.compactMap { Bell(rawValue: $0) }.toRow()
   }
 }
@@ -149,6 +149,10 @@ public struct RowBlock<Stage: StageProtocol>: CustomStringConvertible {
     }
   }
   
+  public subscript(_ index: Int) -> Row<Stage> {
+    rows[index]
+  }
+
   public subscript(_ range: Range<Int>) -> Self {
     Self(rows: rows[range])
   }
@@ -157,6 +161,14 @@ public struct RowBlock<Stage: StageProtocol>: CustomStringConvertible {
 extension RowBlock: Sequence {
   public func makeIterator() -> IndexingIterator<Array<Row<Stage>>> {
     return rows.makeIterator()
+  }
+}
+
+extension RowBlock: ExpressibleByArrayLiteral {
+  public typealias ArrayLiteralElement = Row<Stage>
+  
+  public init(arrayLiteral elements: Row<Stage>...) {
+    self.init(rows: elements)
   }
 }
 
@@ -180,6 +192,12 @@ extension RowBlock {
     let lastRow = rows.last ?? Row<Stage>.rounds()
     let newRows = block.evaluate(at: lastRow)
     self.rows.append(contentsOf: newRows)
+  }
+  
+  public func extended(by block: Block<Stage>) -> Self {
+    var newBlock = self
+    newBlock.extend(by: block)
+    return newBlock
   }
 }
 

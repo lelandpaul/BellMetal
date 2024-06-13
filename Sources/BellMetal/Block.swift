@@ -100,7 +100,7 @@ extension Block {
   }
   
   static public func +(lhs: Change<Stage>, rhs: Block<Stage>) -> Block<Stage> {
-    Block<Stage>(pn: lhs.pn + rhs.pn)
+    Block<Stage>(pn: lhs.pn + "." + rhs.pn)
   }
 }
 
@@ -150,6 +150,9 @@ extension Block {
   public func lineFrom(_ bell: Int, leads: Int = 1)
     -> [Int]
   {
+    guard bell > 0,
+          bell <= Self.stage
+    else { return [] }
     var result = [bell]
     for _ in 0 ..< leads {
       for change in changes {

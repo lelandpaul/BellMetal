@@ -106,7 +106,7 @@ extension NamedRow {
       .partitionMap(on: { $0.isMultiple(of: 2) }) { evens, odds in
         odds + evens
       }
-      .toRow()
+      .toRow()!
   }
   
   private var kings: Row<Stage> {
@@ -114,7 +114,7 @@ extension NamedRow {
       .partitionMap(on: { $0.isMultiple(of: 2) }) { evens, odds in
         odds.reversed() + evens
       }
-      .toRow()
+      .toRow()!
   }
 }
 
