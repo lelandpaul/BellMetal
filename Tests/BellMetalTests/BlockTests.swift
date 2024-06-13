@@ -1,28 +1,42 @@
-import XCTest
-import Nimble
+import Testing
 @testable import BellMetal
 
-final class BlockTests: XCTestCase {
+@Suite("Blocks")
+struct BlockTests {
   
-  func testBlockConstruction() {
+  @Test("Asymmetric construction")
+  func asymmetricConstruction() async throws {
     let block: Block4 = "x14.12"
-    
     let expectedChanges: [Change4] = [
       "x",
       "14",
       "12"
     ]
     
-    expect(block.changes).to(equal(expectedChanges))
-    expect(block.row).to(equal(Row4("2431")))
+    #expect(block.changes == expectedChanges)
+    #expect(block.row == "2431")
   }
   
-  func testBlockConstructionWithSymmetry() {
+  @Test("Symmetric construction")
+  func symmetricConstruction() async throws {
     let block: Block4 = "x14x14,12"
-    expect(block.row).to(equal(Row4("1342")))
+    let expectedChanges: [Change4] = [
+      "x",
+      "14",
+      "x",
+      "14",
+      "x",
+      "14",
+      "x",
+      "12"
+    ]
+    
+    #expect(block.changes == expectedChanges)
+    #expect(block.row == "1342")
   }
   
-  func testApplication() {
+  @Test("Evaluation")
+  func evaluation() async throws {
     let block: Block4 = "x14x14,12"
     let rows = block.evaluate(at: Row4.rounds())
     let expectedRows = RowBlock4(rows: [
@@ -35,6 +49,9 @@ final class BlockTests: XCTestCase {
       "1324",
       "1342",
     ])
-    expect(rows).to(equal(expectedRows))
+    
+    #expect(block.evaluate(at: Row4.rounds()) == expectedRows)
+    #expect(block.evaluate(at: Row4.rounds(), evalMode: .keepBoth) == RowBlock4(rows: [Row4.rounds()] + expectedRows))
+    #expect(block.evaluate(at: Row4.rounds(), evalMode: .keepInitial) == RowBlock4(rows: [Row4.rounds()] + expectedRows[0..<7]))
   }
 }

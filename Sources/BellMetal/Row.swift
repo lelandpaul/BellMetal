@@ -148,6 +148,10 @@ public struct RowBlock<Stage: StageProtocol>: CustomStringConvertible {
       self.rows.append(row)
     }
   }
+  
+  public subscript(_ range: Range<Int>) -> Self {
+    Self(rows: rows[range])
+  }
 }
 
 extension RowBlock: Sequence {

@@ -1,5 +1,5 @@
 import Foundation
-import Combinatorics
+import Algorithms
 
 extension StageProtocol {
   public static var rounds: Row<Self> { Row<Self>.rounds() }
@@ -10,28 +10,29 @@ extension StageProtocol {
 public struct RowGenerator<Stage: StageProtocol>: Sequence, IteratorProtocol {
   public typealias Element = Row<Stage>
   
-  let permutations: Permutation<Bell>
+  var permutations: PermutationsSequence<[Bell]>.Iterator
   var mask: Mask<Stage>? = nil
   var current_pos = 0
   
   public init() {
-    self.permutations = Permutation(of: Stage.bells)
+    self.permutations = Stage.bells.permutations().makeIterator()
   }
   
   public init(matching mask: Mask<Stage>) {
     self.mask = mask
-    self.permutations = Permutation(of: mask.unfixedBells)
+    self.permutations = mask.unfixedBells.permutations().makeIterator()
   }
   
   public mutating func next() -> Row<Stage>? {
-    defer { current_pos += 1 }
-    if current_pos >= permutations.count {
-      return nil
-    }
+//    defer { current_pos += 1 }
+//    if current_pos >= permutations.count {
+//      return nil
+//    }
+    guard let perm = permutations.next() else { return nil }
     if let mask {
-      return try! mask.fill(with: permutations[current_pos])
+      return try! mask.fill(with: perm)
     } else {
-      return try! Row<Stage>(permutations[current_pos])
+      return try! Row<Stage>(perm)
     }
   }
   

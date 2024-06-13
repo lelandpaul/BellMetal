@@ -1,26 +1,26 @@
-import XCTest
-import Nimble
+import Testing
 @testable import BellMetal
 
-final class ChangeTests: XCTestCase {
+@Suite("Changes")
+struct ChangeTests {
+  let cross: Change4 = "x"
+  let hunt: Change4 = "14"
   
-  func testChangeConstruction() {
-    let cross: Change4 = "x"
-    let hunt: Change4 = "14"
+  @Test
+  func construction() async throws {
+    #expect(cross.places == [])
+    #expect(hunt.places == [1,4])
     
-    expect(cross.places).to(equal([]))
-    expect(hunt.places).to(equal([1,4]))
-    
-    expect(cross.row).to(equal(Row4("2143")))
-    expect(hunt.row).to(equal(Row4("1324")))
+    #expect(cross.row == "2143")
+    #expect(hunt.row == "1324")
   }
   
-  func testChangeComposition() {
+  @Test
+  func composition() async throws {
     let backrounds: Row4 = "4321"
-    let cross: Change4 = "x"
-    let hunt: Change4 = "14"
     
-    expect(backrounds * cross).to(equal(Row4("3412")))
-    expect(cross * hunt).to(equal(Row4("2413")))
+    #expect(backrounds * cross == "3412")
+    #expect(cross * hunt == "2413")
+    #expect(hunt * cross == "3142")
   }
 }

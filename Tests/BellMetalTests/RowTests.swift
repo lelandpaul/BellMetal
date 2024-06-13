@@ -1,40 +1,42 @@
-import XCTest
-import Nimble
+import Testing
 @testable import BellMetal
 
-
-final class RowTests: XCTestCase {
+@Suite("Rows")
+struct RowTests {
   
-  func testRowConstruction() {
+  @Test("Construction") 
+  func rowConstruction() async throws {
     let row: RowD = "1234567890ETABCD"
-    expect(row.description).to(equal("1234567890ETABCD"))
+    #expect(row.description == "1234567890ETABCD")
   }
   
-  func testRowComposition() {
+  @Test("Composition") 
+  func rowComposition() async throws {
     let a: Row4 = "1324"
     let b: Row4 = "4321"
-    expect(a*b).to(equal(Row4("4231")))
+    #expect(a*b == "4231")
   }
   
-  func testRowExponentiation() {
+  @Test("Exponentiation") 
+  func rowExponentiation() async throws {
     let row: Row4 = "2341"
-    expect(row ^ 2).to(equal(Row4("3412")))
-    expect(row ^ 0).to(equal(Row4("1234")))
-    expect(row ^ -1).to(equal(Row4("4123")))
-    expect(row ^ -2).to(equal(Row4("3412")))
+    #expect(row ^ 2 == "3412")
+    #expect(row ^ 0 == "1234")
+    #expect(row ^ -1 == "4123")
+    #expect(row ^ -2 == "3412")
   }
   
-  func testRounds() {
-    expect(Row4.rounds()).to(equal(Row4("1234")))
-    expect(RowT.rounds()).to(equal(RowT("1234567890ET")))
+  @Test("Rounds") 
+  func rounds() async throws {
+    #expect(Row4.rounds() == "1234")
+    #expect(RowT.rounds() == "1234567890ET")
   }
   
-  func testRowGeneration() {
-    let rows = Singles.rows.collect()
-    expect(Set(rows.rows).count).to(equal(6))
-    
+  @Test("Generation")
+  func rowGeneration() {
+    #expect(Singles.rows.collect().count == 6)
     let minimusLeadheads = RowGenerator(matching: Mask4("1xxx")).collect()
-    expect(Set(minimusLeadheads.rows).count).to(equal(6))
-    
+    #expect(minimusLeadheads.rows.count == 6)
   }
+  
 }

@@ -1,28 +1,28 @@
-import XCTest
-import Nimble
+import Testing
 @testable import BellMetal
 
-final class MaskTests: XCTestCase {
+@Suite("Masks")
+struct MaskTests {
   
-  func testEquality() {
-    expect(Mask6("xxx456"))
-      .to(equal(Mask("xxx456")))
+  @Test func equality() async {
+    #expect(Mask6("xxx456") == Mask("xxx456"))
   }
   
-  func testMatching() {
+  @Test func matching() async throws {
     let mask: Mask6 = "1x6xxx"
-    expect(mask.matches(Row6("126345"))).to(beTrue())
-    expect(mask.matches(Row6("621345"))).to(beFalse())
+    #expect(mask.matches("126345"))
+    #expect(!mask.matches("123456"))
+    #expect(!mask.matches("216345"))
+    #expect(!mask.matches("621345"))
   }
   
-  func testFill() throws {
+  @Test func fill() async throws {
     let mask: Mask6 = "1x6xxx"
-    expect(try mask.fill(with: [.b2, .b3, .b4, .b5]))
-      .to(equal(Row6("126345")))
+    #expect(try mask.fill(with: [.b2, .b3, .b4, .b5]) == "126345")
   }
   
-  func testTenorsTogetherMasks() {
-    let expected: [Mask8] = [
+  @Test func tenorsTogetherMasks() async throws {
+    let expected: Set<Mask8> = [
       "178xxxxx",
       "18x7xxxx",
       "1x7x8xxx",
@@ -31,18 +31,16 @@ final class MaskTests: XCTestCase {
       "1xxxx8x7",
       "1xxxxx78"
     ]
-    expect(Set(Major.tenorsTogetherLeadheadMasks))
-      .to(equal(Set(expected)))
+    #expect(Set(Major.tenorsTogetherLeadheadMasks) == expected)
   }
   
-  func testTenorsTogetherRows() {
+  @Test func tenorsTogetherRows() async throws {
     var rows = [Row8]()
     for row in Major.tenorsTogetherLeadheads {
       rows.append(row as! Row8)
     }
-    expect(rows.count).to(equal(840))
-    expect(Set(rows).count).to(equal(840))
-    expect(rows.allSatisfy { $0.isTenorsTogether ?? false })
-      .to(beTrue())
+    #expect(rows.count == 840)
+    #expect(Set(rows).count == 840)
+    #expect(rows.allSatisfy { $0.isTenorsTogether ?? false} )
   }
 }

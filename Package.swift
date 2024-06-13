@@ -14,23 +14,19 @@ let package = Package(
     ],
     dependencies: [
       .package(
-        url: "https://github.com/Quick/Nimble.git",
-        from: "12.0.0"
+        url: "https://github.com/apple/swift-algorithms",
+        from: "1.2.0"
       ),
-      .package(
-        url: "https://github.com/dankogai/swift-combinatorics.git",
-        from: "0.0.1"
-      )
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "BellMetal",
-            dependencies: [.product(name: "Combinatorics", package: "swift-combinatorics")]
+            dependencies: [.product(name: "Algorithms", package: "swift-algorithms")]
         ),
         .testTarget(
             name: "BellMetalTests",
-            dependencies: ["BellMetal", "Nimble"]),
+            dependencies: ["BellMetal"]),
     ]
 )
