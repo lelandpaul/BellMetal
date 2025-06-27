@@ -29,6 +29,10 @@ extension Stage {
   public var count: Int {
     Int(rawValue) + 1
   }
+  
+  public var even: Bool {
+    count.isMultiple(of: 2)
+  }
 }
 
 extension Stage {
