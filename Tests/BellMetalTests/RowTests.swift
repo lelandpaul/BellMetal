@@ -78,6 +78,14 @@ struct RowTests {
     
     #expect(x * h == xh)
     #expect(h * x == hx)
+    
+    let t1: Row = "1342"
+    let t2: Row = "4231"
+    let t1t2: Row = "2341"
+    let t2t1: Row = "4312"
+    #expect(t1 * t2 == t1t2)
+    #expect(t2 * t1 == t2t1)
+    
   }
   
   @Test func inverse() async throws {
@@ -112,5 +120,13 @@ struct RowTests {
     #expect(try t.extend(to: .doubles) == "43215")
     #expect(try t.extend(to: .major) == "43215678")
     #expect(try t.extend(to: .royal) == "4321567890")
+  }
+  
+  @Test func swap() async throws {
+    let t_row: Row = "1234"
+    let t_raw = t_row.row
+    #expect(Row(stage: .minimus, row: t_raw.swapUp(from: 0)) == "2134")
+    #expect(Row(stage: .minimus, row: t_raw.swapUp(from: 1)) == "1324")
+    #expect(Row(stage: .minimus, row: t_raw.swapUp(from: 2)) == "1243")
   }
 }

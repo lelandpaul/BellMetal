@@ -60,6 +60,20 @@ extension PlaceNotationParser {
     }
   }
   
+  internal static func representPlace(_ value: UInt8) -> String {
+    return switch value {
+    case let x where x < 10: "\(x)"
+    case 10: "0"
+    case 11: "E"
+    case 12: "T"
+    case 13: "A"
+    case 14: "B"
+    case 15: "C"
+    case 16: "D"
+    default: fatalError("Invalid place: \(value)")
+    }
+  }
+  
   /// Given a single change, return a list of places explicitly made. (Does not add implicit external places.)
   internal static func parsePlaces(_ change: String) -> [Int] {
     switch change {
@@ -102,10 +116,35 @@ extension PlaceNotationParser {
   }
   
 
-  internal static func parseAllChanges(_ pn: String) -> [[Int]] {
+  internal static func parseAllPlaces(
+    _ pn: String,
+    at stage: Stage? = nil
+  ) -> (Stage, [[Int]]) {
     let changes = splitAndExpandPalindrome(pn)
       .map(parsePlaces)
-    let stage = inferStage(changes)
-    return changes.map { inferExternalPlaces($0, at: stage)}
+    let knownStage = stage ?? inferStage(changes)
+    return (knownStage, changes.map { inferExternalPlaces($0, at: knownStage)})
+  }
+  
+  internal static func changeToRawRow(_ places: [Int], at stage: Stage) -> RawRow {
+    var change = stage.rounds.row
+    var i = 0
+    while i < stage.count - 1 {
+      if places.contains(i+1) {
+        i += 1
+      } else {
+        change = change.swapUp(from: UInt8(i))
+        i += 2
+      }
+    }
+    return change
+  }
+  
+  internal static func parseAllChanges(
+    _ pn: String,
+    at stage: Stage? = nil
+  ) -> (Stage, [RawRow]) {
+    let (knownStage, places) = parseAllPlaces(pn, at: stage)
+    return (knownStage, places.map { changeToRawRow($0, at: knownStage) })
   }
 }
