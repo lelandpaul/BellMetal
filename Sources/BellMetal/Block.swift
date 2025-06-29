@@ -8,7 +8,7 @@ struct Block {
   private let rows: [RawRow]
   private let rowSet: Set<RawRow>
   
-  private init(stage: Stage, rows: [RawRow], rowSet: Set<RawRow>) {
+  internal init(stage: Stage, rows: [RawRow], rowSet: Set<RawRow>) {
     self.stage = stage
     self.rows = rows
     self.rowSet = rowSet
