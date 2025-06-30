@@ -71,7 +71,7 @@ struct PlaceNotationTests {
   }
   
   @Test func repeatFalse() async throws {
-    let x = PlaceNotation("x", at: .minimus)
+    let x = try PlaceNotation("x", at: .minimus)
     let pricked = try x.prick(repeat: .untilFalse)
     #expect(pricked == ["2143", "1234"])
     
@@ -87,5 +87,11 @@ struct PlaceNotationTests {
     #expect(wrong.count == 8)
     #expect(before.count == 16)
     #expect(home.count == 24)
+  }
+  
+  @Test func concatenation() {
+    let a: PlaceNotation = "6:12"
+    let b: PlaceNotation = "6:14"
+    #expect(a + b == "6:12.14")
   }
 }

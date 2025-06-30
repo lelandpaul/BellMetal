@@ -11,8 +11,14 @@ struct PlaceNotation {
     self.changes = changes
   }
   
-  public init(_ pn: String, at stage: Stage? = nil) {
-    let (knownStage, changes) = PlaceNotationParser.parseAllChanges(pn, at: stage)
+  public init(_ pn: String, at stage: Stage? = nil) throws {
+    let (explicitStage, pn) = try PlaceNotationParser.getExplicitStage(pn)
+    if explicitStage != nil,
+       stage != nil,
+       explicitStage != stage {
+      throw BellMetalError.invalidPlaceNotation
+    }
+    let (knownStage, changes) = try PlaceNotationParser.parseAllChanges(pn, at: stage ?? explicitStage)
     self.stage = knownStage
     self.changes = changes
   }
@@ -25,9 +31,16 @@ extension PlaceNotation: Equatable {
   }
 }
 
+extension PlaceNotation: Hashable {
+  func hash(into hasher: inout Hasher) {
+    hasher.combine(stage)
+    hasher.combine(changes)
+  }
+}
+
 extension PlaceNotation: ExpressibleByStringLiteral {
   init(stringLiteral value: StringLiteralType) {
-    self.init(value)
+    try! self.init(value)
   }
 }
 
@@ -185,3 +198,36 @@ extension PlaceNotation {
     return Block(stage: stage, rows: rawRows, rowSet: Set(rawRows))
   }
 }
+
+// MARK: - Useful facts
+extension PlaceNotation {
+  var count: Int {
+    changes.count
+  }
+  
+  /// The total transposition reached by this place notation.
+  var leadhead: Row {
+    Row(
+      stage: stage,
+      row: changes.reduce(into: stage.rounds.row) { $0 = $0 * $1 }
+    )
+  }
+}
+
+// MARK: - PN to PN operations
+extension PlaceNotation {
+  /// Safe, throwing concatenation of two PlaceNotations
+  public func concatenate(with other: PlaceNotation) throws -> PlaceNotation {
+    guard stage == other.stage else { throw BellMetalError.stageMismatch }
+    return .init(stage: stage, changes: changes + other.changes)
+    
+  }
+  
+  /// Unsafe, non-throwing concatenation of PlaceNotation.
+  /// The user is responsible for not mismatching stages.
+  public static func + (lhs: PlaceNotation, rhs: PlaceNotation) -> PlaceNotation {
+    precondition(lhs.stage == rhs.stage, "Stages don't match: \(lhs) + \(rhs)")
+    return try! lhs.concatenate(with: rhs)
+  }
+}
+
