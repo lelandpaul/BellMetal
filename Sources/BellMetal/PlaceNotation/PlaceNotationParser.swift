@@ -38,7 +38,7 @@ extension Array {
 
 extension PlaceNotationParser {
   
-  private static func interpretPlace(_ value: Character) -> Int {
+  private static func interpretPlace(_ value: Character) -> Int? {
     return switch value {
     case "1": 1
     case "2": 2
@@ -56,15 +56,35 @@ extension PlaceNotationParser {
     case "B": 14
     case "C": 15
     case "D": 16
+    default: nil
+    }
+  }
+  
+  internal static func representPlace(_ value: UInt8) -> String {
+    return switch value {
+    case let x where x < 10: "\(x)"
+    case 10: "0"
+    case 11: "E"
+    case 12: "T"
+    case 13: "A"
+    case 14: "B"
+    case 15: "C"
+    case 16: "D"
     default: fatalError("Invalid place: \(value)")
     }
   }
   
-  /// Given a single change, return a list of places explicitly made. (Does not add implicit external places.)
-  internal static func parsePlaces(_ change: String) -> [Int] {
+  /// Given a single change, return a list of places explicitly made.
+  /// (Does not add implicit external places.)
+  internal static func parsePlaces(_ change: String) throws -> [Int] {
     switch change {
-    case "x", "-": []
-    default: change.map(interpretPlace)
+    case "x", "-":
+      return []
+    default:
+      return try change.map {
+        guard let place = interpretPlace($0) else { throw BellMetalError.invalidPlaceNotation}
+        return place
+      }
     }
   }
   
@@ -102,10 +122,49 @@ extension PlaceNotationParser {
   }
   
 
-  internal static func parseAllChanges(_ pn: String) -> [[Int]] {
-    let changes = splitAndExpandPalindrome(pn)
+  internal static func parseAllPlaces(
+    _ pn: String,
+    at stage: Stage? = nil
+  ) throws -> (Stage, [[Int]]) {
+    let changes = try splitAndExpandPalindrome(pn)
       .map(parsePlaces)
-    let stage = inferStage(changes)
-    return changes.map { inferExternalPlaces($0, at: stage)}
+    let knownStage = stage ?? inferStage(changes)
+    return (knownStage, changes.map { inferExternalPlaces($0, at: knownStage)})
+  }
+  
+  internal static func changeToRawRow(_ places: [Int], at stage: Stage) -> RawRow {
+    var change = stage.rounds.row
+    var i = 0
+    while i < stage.count - 1 {
+      if places.contains(i+1) {
+        i += 1
+      } else {
+        change = change.swapUp(from: UInt8(i))
+        i += 2
+      }
+    }
+    return change
+  }
+  
+  internal static func getExplicitStage(_ pn: String) throws -> (Stage?, String) {
+    guard pn.contains(":") else { return (nil, pn) }
+    let splits = pn.split(separator: ":")
+    guard splits.count == 2,
+          let stageStr = splits.first,
+          let pnStr = splits.last,
+          stageStr.count == 1,
+          let stageNum = UInt8(String(stageStr)),
+          stageNum >= 1,
+          let stage = Stage(rawValue: stageNum - 1)
+    else { throw BellMetalError.invalidPlaceNotation }
+    return (stage, String(pnStr))
+  }
+  
+  internal static func parseAllChanges(
+    _ pn: String,
+    at stage: Stage? = nil
+  ) throws -> (Stage, [RawRow]) {
+    let (knownStage, places) = try parseAllPlaces(pn, at: stage)
+    return (knownStage, places.map { changeToRawRow($0, at: knownStage) })
   }
 }

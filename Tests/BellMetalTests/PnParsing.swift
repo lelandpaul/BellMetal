@@ -54,14 +54,54 @@ struct PnParsingTests {
     #expect(PNP.inferExternalPlaces([], at: .doubles) == [5])
   }
   
-  @Test func parseAllChanges() {
+  @Test func parseAllPlaces() throws {
     let pb4 = "x4x4,2"
-    let pb4_changes = [[],[1,4],[],[1,4],[],[1,4],[],[1,2]]
-    #expect(PNP.parseAllChanges(pb4) == pb4_changes)
+    let pb4_places = [[],[1,4],[],[1,4],[],[1,4],[],[1,2]]
+    #expect(try PNP.parseAllPlaces(pb4).1 == pb4_places)
     
     let g5 = "3,1.5.1.5.1"
-    let g5_changes = [[3],[1],[5],[1],[5],[1],[5],[1],[5],[1]]
-    #expect(PNP.parseAllChanges(g5) == g5_changes)
+    let g5_places = [[3],[1],[5],[1],[5],[1],[5],[1],[5],[1]]
+    #expect(try PNP.parseAllPlaces(g5).1 == g5_places)
+  }
+  
+  @Test func changeToRawRow() {
+    let expectedX: Row = "21436587"
+    let expected14: Row = "1324"
+    let expected3: Row = "21354"
+    #expect(PNP.changeToRawRow([], at: .major) == expectedX.row)
+    #expect(PNP.changeToRawRow([1,4], at: .minimus) == expected14.row)
+    #expect(PNP.changeToRawRow([3], at: .doubles) == expected3.row)
+  }
+  
+  @Test func parseAllChanges() throws {
+    let pb4 = "x4x4,2"
+    let pb4_changes: [Row] = ["2143", "1324", "2143", "1324", "2143", "1324", "2143", "1243"]
+    #expect(try PNP.parseAllChanges(pb4).1 == pb4_changes.map(\.row))
+    
+    let g5 = "3,1.5.1.5.1"
+    let g5_changes: [Row] = ["21354", "13254", "21435", "13254", "21435", "13254", "21435", "13254", "21435", "13254"]
+    #expect(try PNP.parseAllChanges(g5).1 == g5_changes.map(\.row))
+  }
+  
+  @Test func parsePN() throws {
+    let pb4 = "x4x4,2"
+    let pb4_changes: [Row] = ["2143", "1324", "2143", "1324", "2143", "1324", "2143", "1243"]
+    let expectedPb4 = PlaceNotation(stage: .minimus, changes: pb4_changes.map(\.row))
+    #expect(try PlaceNotation(pb4) == expectedPb4)
+
+    let g5 = "3,1.5.1.5.1"
+    let g5_changes: [Row] = ["21354", "13254", "21435", "13254", "21435", "13254", "21435", "13254", "21435", "13254"]
+    let expectedG5 = PlaceNotation(stage: .doubles, changes: g5_changes.map(\.row))
+    #expect(try PlaceNotation(g5) == expectedG5)
+  }
+  
+  @Test func parsePNWithExplicitStage() throws {
+    let lb6: PlaceNotation = "6:x4x4,2"
+    print(lb6)
+    #expect(try lb6 == PlaceNotation("x4x4,2", at: .minor))
+    
+    let invalid: PlaceNotation? = try? PlaceNotation("4:x4x4,2", at: .minor)
+    #expect(invalid == nil)
   }
 }
 

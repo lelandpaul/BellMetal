@@ -96,6 +96,34 @@ struct BlockTests {
     #expect(try block.transpose(by: transposeBy) == expectedTransposed)
   }
   
+  @Test func testTransposePb4() throws {
+    let pb4_first_lead: Block = [
+      "2143",
+      "2413",
+      "4231",
+      "4321",
+      "3412",
+      "3142",
+      "1324",
+      "1342"
+    ]
+    
+    let pb4_expected_second_lead: Block = [
+      "3124",
+      "3214",
+      "2341",
+      "2431",
+      "4213",
+      "4123",
+      "1432",
+      "1423"
+    ]
+    
+    let pb4_second_lead: Block = try pb4_first_lead.transpose(by: pb4_first_lead.last!)
+    
+    #expect(pb4_second_lead == pb4_expected_second_lead)
+  }
+  
   @Test func testExtend() throws {
     let block: Block = [
       "1234",
