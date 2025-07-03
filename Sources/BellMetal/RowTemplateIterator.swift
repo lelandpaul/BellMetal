@@ -4,11 +4,11 @@ import Algorithms
 
 extension Mask {
   
-  public func allMatchingRows() -> RowGenerator {
-    RowGenerator(mask: self)
+  public func allMatchingRows() -> RowTemplateIterator {
+    RowTemplateIterator(mask: self)
   }
   
-  struct RowGenerator {
+  struct RowTemplateIterator {
     let stage: Stage
     let mask: Mask
     let unfixedPos: [Int]
@@ -26,7 +26,7 @@ extension Mask {
   }
 }
 
-extension Mask.RowGenerator: IteratorProtocol {
+extension Mask.RowTemplateIterator: IteratorProtocol {
   typealias Element = Row
   
   mutating func next() -> Row? {
