@@ -27,6 +27,13 @@ struct Mask {
     self.fixedPos = fixedPos
   }
   
+  init(_ row: Row) {
+    self.stage = row.stage
+    self.fixedPos = (1...stage.count).reduce(into: [:]) { dict, new in
+      dict[new] = row[new]
+    }
+  }
+  
   /// Checks whether a given row matches this mask.
   /// - Parameter row: The row to check.
   /// - Returns: True if the row matches. Always false
@@ -54,3 +61,37 @@ extension Mask: CustomStringConvertible {
 }
 
 extension Mask: Equatable, Hashable { }
+
+extension Block {
+  /// Return rows matching at least one of the supplied masks.
+  /// - Parameter masks: The masks to match against.
+  /// - Returns: Rows that match at least one mask.
+  public func matching(any masks: [Mask]) throws -> [Row] {
+    let maskStage = Set(masks.map(\.stage))
+    guard maskStage.count == 1,
+          let maskStage = maskStage.first,
+          maskStage == self.stage
+    else {
+      throw BellMetalError.stageMismatch
+    }
+    return self.filter { row in
+      masks.map { $0.matches(row) }.contains(true)
+    }
+  }
+  
+  /// A count of rows matching at least one of the supplied Masks.
+  /// - Parameter masks: Masks to match against.
+  /// - Returns: An integer count of rows.
+  public func count(matchingAny masks: [Mask]) throws -> Int {
+    let maskStage = Set(masks.map(\.stage))
+    guard maskStage.count == 1,
+          let maskStage = maskStage.first,
+          maskStage == self.stage
+    else {
+      throw BellMetalError.stageMismatch
+    }
+    return self.count { row in
+      masks.map { $0.matches(row) }.contains(true)
+    }
+  }
+}

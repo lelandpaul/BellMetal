@@ -40,6 +40,10 @@ extension Stage {
     Bell(rawValue: rawValue)! // Safe: raw values are known to be the same
   }
   
+  public var tenorPair: (Bell, Bell) {
+    (Bell(rawValue: rawValue - 1)!, Bell(rawValue: rawValue)!)
+  }
+  
   public func includes(_ bell: Bell) -> Bool {
     bell.rawValue <= self.rawValue
   }

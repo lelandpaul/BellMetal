@@ -5,8 +5,8 @@ import Foundation
 /// for quick truth-checking.
 struct Block {
   let stage: Stage
-  private let rows: [RawRow]
-  private let rowSet: Set<RawRow>
+  internal let rows: [RawRow]
+  internal let rowSet: Set<RawRow>
   
   internal init(stage: Stage, rows: [RawRow], rowSet: Set<RawRow>) {
     self.stage = stage
@@ -75,6 +75,28 @@ extension Block {
   }
   public var last: Row? {
     Row.init(stage: stage, row: rows.last!) // Safe: Not possible to construct tempty Block
+  }
+  
+  /// Separates the rows into two blocks by stroke parity.
+  /// - Parameter backstrokeStart: Whether to consider the current
+  /// block to start at a backstroke or not. (Default false, i.e. handstroke
+  /// start.)
+  /// - Returns: Two blocks labeled hand and back.
+  public func groupByStroke(
+    backstrokeStart: Bool = false
+  ) -> (hand: Block, back: Block) {
+    var first: [RawRow] = []
+    var second: [RawRow] = []
+    self.rows.enumerated().forEach { (idx, row) in
+      if idx.isMultiple(of: 2) {
+        first.append(row)
+      } else {
+        second.append(row)
+      }
+    }
+    let firstBlock = Block(stage: self.stage, rows: first, rowSet: Set(first))
+    let secondBlock = Block(stage: self.stage, rows: second, rowSet: Set(second))
+    return backstrokeStart ? (hand: secondBlock, back: firstBlock) : (hand: firstBlock, back: secondBlock)
   }
 }
 
