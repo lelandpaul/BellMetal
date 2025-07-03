@@ -44,6 +44,10 @@ extension Stage {
     bell.rawValue <= self.rawValue
   }
   
+  public var allBells: [Bell] {
+    (0...rawValue).map { Bell(rawValue: $0)! }
+  }
+  
   public var rounds: Row {
     switch self {
     case .one:
