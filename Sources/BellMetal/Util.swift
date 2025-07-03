@@ -22,3 +22,14 @@ extension Set {
     sequence.forEach { insert($0) }
   }
 }
+
+extension IteratorProtocol {
+  func collect() -> [Element] {
+    var iteratorCopy = self
+    var result: [Element] = []
+    while let element = iteratorCopy.next() {
+      result.append(element)
+    }
+    return result
+  }
+}
