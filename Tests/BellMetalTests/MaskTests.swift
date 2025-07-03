@@ -23,6 +23,9 @@ struct MaskTests {
     #expect(onlyTenor.matches("1423"))
     #expect(onlyTenor.matches("2431"))
     #expect(!onlyTenor.matches("4123"))
+    
+    let wrongStage: Mask = "xxxx"
+    #expect(!wrongStage.matches("12345"))
   }
   
   @Test func description() {
