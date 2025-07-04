@@ -1,6 +1,6 @@
 import Foundation
 
-enum MusicType {
+enum MusicType: Sendable {
   case fiveSix
   case cru
   case runs
@@ -11,7 +11,36 @@ enum MusicType {
   case tenorsReversed
   case backBellCombo
   case comboNearMiss
-  case custom((Block) -> Int)
+  case custom(name: String, score: @Sendable (Block) -> Int)
+}
+
+extension MusicType {
+  public func score(_ rows: Block) -> Int {
+    switch self {
+    case .fiveSix:
+      MusicType.scoreFiveSix(rows)
+    case .cru:
+      MusicType.scoreCru(rows)
+    case .runs:
+      MusicType.scoreRuns(rows, length: 4)
+    case .run(length: let length):
+      MusicType.scoreRuns(rows, length: length)
+    case .wrap:
+      MusicType.scoreWraps(rows)
+    case .namedRow:
+      MusicType.scoreNamedRows(rows)
+    case .namedRowCombo:
+      MusicType.scoreNamedRowCombos(rows)
+    case .tenorsReversed:
+      MusicType.scoreTenorsReversed(rows)
+    case .backBellCombo:
+      MusicType.scoreBackBellCombo(rows)
+    case .comboNearMiss:
+      MusicType.scoreComboNearMiss(rows)
+    case .custom(_, let scoreFunction):
+      scoreFunction(rows)
+    }
+  }
 }
 
 extension MusicType {
@@ -177,5 +206,36 @@ extension MusicType {
         Swift.abs(row[bell] - (Int(bell.rawValue) + 1)) <= 1
       }
     }
+  }
+}
+
+
+extension MusicType: CustomStringConvertible {
+  var description: String {
+    switch self {
+    case .fiveSix:
+      "56s"
+    case .cru:
+      "CRUs"
+    case .runs:
+      "4-runs"
+    case .run(length: let length):
+      "\(length)-runs"
+    case .wrap:
+      "Wraps"
+    case .namedRow:
+      "Named Rows"
+    case .namedRowCombo:
+      "Named Row Combinations"
+    case .tenorsReversed:
+      "Tenors-reversed"
+    case .backBellCombo:
+      "Back Bell Combinations"
+    case .comboNearMiss:
+      "Combination Near Misses"
+    case .custom(name: let name, score: let score):
+      name
+    }
+    
   }
 }
