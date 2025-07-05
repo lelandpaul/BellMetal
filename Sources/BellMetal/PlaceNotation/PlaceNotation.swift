@@ -96,6 +96,13 @@ extension PlaceNotation: CustomStringConvertible {
 }
 
 extension PlaceNotation {
+  public static func *(lhs: Row, rhs: PlaceNotation) -> Row {
+    precondition(lhs.stage == rhs.stage)
+    return lhs * rhs.leadhead
+  }
+}
+
+extension PlaceNotation {
   /// When pricking a block, used to determine which of the starting and ending
   /// rows to keep in the result.
   enum LeadheadMode {

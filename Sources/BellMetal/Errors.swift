@@ -5,6 +5,7 @@ enum BellMetalError: Error {
   case invalidStage
   case invalidPlaceNotation
   case invalidMask
+  case inconsistentStageForMusic
 }
 
 extension BellMetalError: CustomStringConvertible {
@@ -18,6 +19,8 @@ extension BellMetalError: CustomStringConvertible {
       "Invalid place notation."
     case .invalidMask:
       "Invalid mask."
+    case .inconsistentStageForMusic:
+      "Music can only be assessed if the rows are of the same stage."
     }
   }
 }

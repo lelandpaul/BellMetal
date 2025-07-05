@@ -57,6 +57,14 @@ extension Row: CustomStringConvertible {
 // MARK: - Subscripts
 
 extension Row {
+  
+  /// Safely retrieve the bell at a given 1-indexed position;
+  /// nil if the position is invalid for the stage.
+  func bell(at pos: Int) -> Bell? {
+    guard pos > 0 && pos <= self.stage.count else { return nil }
+    return self[pos]
+  }
+  
   /// Retrieve the Bell at a given 1-indexed position.
   subscript(_ position: Int) -> Bell {
     precondition(position > 0 && position <= self.stage.count, "Invalid position for row of stage \(stage): \(position)")
@@ -160,5 +168,31 @@ extension Row {
       throw BellMetalError.invalidStage
     }
     return Row(stage: newStage, row: self.row.extend(from: self.stage, to: newStage))
+  }
+}
+
+extension Row {
+  init(_ row: [Int]) {
+    self.init(row.map { Bell(rawValue: UInt8($0)) ?? .b1 }) // Will fail if an invalid bell is included
+  }
+}
+
+// MARK: - Sequence conformance
+
+extension Row: Sequence {
+  public func makeIterator() -> RowIterator {
+    RowIterator(row: self)
+  }
+  
+  public struct RowIterator: IteratorProtocol {
+    public typealias Element = Bell
+    let row: Row
+    var currentIndex: Int = 1
+    
+    public mutating func next() -> Bell? {
+      defer { currentIndex += 1}
+      guard let nextBell = row.bell(at: currentIndex) else { return nil }
+      return nextBell
+    }
   }
 }

@@ -15,6 +15,31 @@ extension Array where Element: Equatable {
   }
 }
 
+extension Array {
+  /// Interleave two arrays, alternating one element of self and one element of other
+  /// - Parameter other: The other array to interleave in
+  /// - Returns: An interleaved array
+  internal func interleave(with other: Self) -> Self {
+    let overlappedLength = Swift.min(self.count, other.count)
+    let excess = self.count > overlappedLength ? self.dropFirst(overlappedLength) : other.dropFirst(overlappedLength)
+    return zip(self.prefix(overlappedLength), other.prefix(overlappedLength))
+      .flatMap { [$0, $1] } + excess
+  }
+  
+  func partition(on predicate: (Element) -> Bool) -> ([Element], [Element]) {
+    return (self.filter(predicate), self.filter { !predicate($0) })
+  }
+  
+  func partitionMap(
+    on predicate: (Element) -> Bool,
+    applying function: (Self, Self) -> Self
+  ) -> Self {
+    let (left, right) = self.partition(on: predicate)
+    return function(left, right)
+  }
+
+}
+
 extension Set {
   internal mutating func insert(
     contentsOf sequence: any Sequence<Element>
