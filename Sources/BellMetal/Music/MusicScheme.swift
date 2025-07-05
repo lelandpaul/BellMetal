@@ -44,3 +44,12 @@ extension MusicScheme {
   }
 }
 
+extension Block {
+  public func musicScore(_ scheme: MusicScheme = .shared) -> Int {
+    scheme.score(self)
+  }
+  
+  public func musicScoreDetails(_ scheme: MusicScheme = .shared) -> [MusicScheme.ScoreDetail] {
+    scheme.scoreDetails(self)
+  }
+}
