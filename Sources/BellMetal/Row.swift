@@ -66,7 +66,7 @@ extension Row {
   }
   
   /// Retrieve the Bell at a given 1-indexed position.
-  subscript(_ position: Int) -> Bell {
+  public subscript(_ position: Int) -> Bell {
     precondition(position > 0 && position <= self.stage.count, "Invalid position for row of stage \(stage): \(position)")
     let raw = self.row.rawBell(at: UInt8(position - 1))
     return Bell(rawValue: raw)! // Safe: Checked when row is built
@@ -74,7 +74,7 @@ extension Row {
   
   
   /// Retrieve the 1-indexed position of a bell in the row.
-  subscript(bell: Bell) -> Int {
+  public subscript(bell: Bell) -> Int {
     precondition(self.stage.includes(bell), "Invalid bell for stage \(self.stage): \(bell)")
     guard let rawPosition = self.row.rawPosition(of: bell.rawValue) else {
       fatalError("Tried to find a bell in an invalid row: \(self), \(bell)")
