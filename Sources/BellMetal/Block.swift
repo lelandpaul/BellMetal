@@ -4,7 +4,7 @@ import Foundation
 /// enforcing a consistent stage and in keeping a Set
 /// for quick truth-checking.
 public struct Block {
-  let stage: Stage
+  public let stage: Stage
   internal let rows: [RawRow]
   internal let rowSet: Set<RawRow>
   
