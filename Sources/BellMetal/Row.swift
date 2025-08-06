@@ -3,7 +3,7 @@ import Foundation
 /// A representation of an individual row, i.e. an arbitrary permutation
 /// on some number of bells.
 public struct Row: Equatable, Hashable {
-  let stage: Stage
+  public let stage: Stage
   internal let row: RawRow
   
   internal init(stage: Stage, row: RawRow) {
