@@ -208,12 +208,12 @@ extension PlaceNotation {
 
 // MARK: - Useful facts
 extension PlaceNotation {
-  var count: Int {
+  public var count: Int {
     changes.count
   }
   
   /// The total transposition reached by this place notation.
-  var leadhead: Row {
+  public var leadhead: Row {
     Row(
       stage: stage,
       row: changes.reduce(into: stage.rounds.row) { $0 = $0 * $1 }
@@ -238,3 +238,18 @@ extension PlaceNotation {
   }
 }
 
+// MARK: - Lines
+extension PlaceNotation {
+  
+  /// Generate the blueline for a given place bell, extending for some number of leads.
+  /// - Parameters:
+  ///   - bell: The bell to generate the line for.
+  ///   - leads: How many repetitions of the place notation block to continue the line through.
+  /// - Returns: A sequence of integers between 1 and stage.n (inclusive) representing the
+  /// position of the bell in each row. Includes both the first and last rows.
+  public func line(for bell: Bell, leads: UInt = 1) -> [Int] {
+    guard self.stage.includes(bell) else { return [] }
+    return (try? prick(keeping: .keepBoth, repeat: .times(leads)))?
+      .map { $0[bell] } ?? []
+  }
+}
