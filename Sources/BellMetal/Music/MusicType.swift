@@ -15,7 +15,7 @@ enum MusicType: Sendable {
 }
 
 extension MusicType {
-  public func score(_ rows: Block) -> Int {
+  public func score(_ rows: Block, backstrokeStart: Bool = false) -> Int {
     switch self {
     case .fiveSix:
       MusicType.scoreFiveSix(rows)
@@ -32,7 +32,7 @@ extension MusicType {
     case .namedRowCombo:
       MusicType.scoreNamedRowCombos(rows)
     case .tenorsReversed:
-      MusicType.scoreTenorsReversed(rows)
+      MusicType.scoreTenorsReversed(rows, backstrokeStart: backstrokeStart)
     case .backBellCombo:
       MusicType.scoreBackBellCombo(rows)
     case .comboNearMiss:
