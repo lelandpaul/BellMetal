@@ -1,13 +1,13 @@
 import Foundation
 
-struct MusicScheme: Sendable {
+public struct MusicScheme: Sendable {
   let scheme: [(type: MusicType, weight: Int)]
   
   public init(_ scheme: [(MusicType, weight: Int)]) {
     self.scheme = scheme
   }
   
-  static let shared: MusicScheme = .init([
+  public static let shared: MusicScheme = .init([
     (type: .fiveSix, weight: 1),
     (type: .cru, weight: 1),
     (type: .runs, weight: 1),
@@ -31,7 +31,7 @@ extension MusicScheme {
     score(Block(rows))
   }
   
-  typealias ScoreDetail = (type: MusicType, weight: Int, score: Int)
+  public typealias ScoreDetail = (type: MusicType, weight: Int, score: Int)
   
   public func scoreDetails(_ block: Block) -> [ScoreDetail] {
     scheme.map { pair in

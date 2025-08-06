@@ -11,7 +11,7 @@ extension Mask {
     RowTemplateIterator(mask: self)
   }
   
-  struct RowTemplateIterator {
+  public struct RowTemplateIterator {
     let stage: Stage
     let mask: Mask
     let unfixedPos: [Int]
@@ -30,9 +30,9 @@ extension Mask {
 }
 
 extension Mask.RowTemplateIterator: IteratorProtocol {
-  typealias Element = Row
+  public typealias Element = Row
   
-  mutating func next() -> Row? {
+  mutating public func next() -> Row? {
     guard var nextPerm = permutations.next() else { return nil }
     let bellArray = (1...stage.count).map { pos in
       if let fixedBell = mask.fixedPos[pos] {

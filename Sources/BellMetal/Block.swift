@@ -3,7 +3,7 @@ import Foundation
 /// An ordered sequence of rows. Differs from [Row] in
 /// enforcing a consistent stage and in keeping a Set
 /// for quick truth-checking.
-struct Block {
+public struct Block {
   let stage: Stage
   internal let rows: [RawRow]
   internal let rowSet: Set<RawRow>
@@ -28,21 +28,21 @@ struct Block {
 }
 
 extension Block: ExpressibleByArrayLiteral {
-  typealias ArrayLiteralElement = Row
-  init(arrayLiteral elements: ArrayLiteralElement...) {
+  public typealias ArrayLiteralElement = Row
+  public init(arrayLiteral elements: ArrayLiteralElement...) {
     self.init(elements)
   }
 }
 
 extension Block: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     let rows = self.rows.map { Row(stage: self.stage, row: $0) }
     return "Block(\(rows)"
   }
 }
 
 extension Block: Sequence {
-  func makeIterator() -> Array<Row>.Iterator {
+  public func makeIterator() -> Array<Row>.Iterator {
     return self.rows.lazy.map({ Row(stage: self.stage, row: $0) }).makeIterator()
   }
 }

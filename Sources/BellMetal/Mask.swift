@@ -7,7 +7,7 @@ import Foundation
 /// "xxxxxx78" represents all rows ending 78 on Major.
 /// Masks can be `match`ed against some target row, or all matching
 /// rows may be iterated over via `allMatchingRows()`.
-struct Mask {
+public struct Mask {
   let stage: Stage
   let fixedPos: [Int: Bell]
   
@@ -53,7 +53,7 @@ extension Mask: ExpressibleByStringLiteral {
 }
 
 extension Mask: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     (1...stage.count).map { i in
       fixedPos[i]?.description ?? "x"
     }.joined()
