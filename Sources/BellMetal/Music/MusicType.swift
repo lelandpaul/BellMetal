@@ -1,6 +1,6 @@
 import Foundation
 
-enum MusicType: Sendable {
+public enum MusicType: Sendable {
   case fiveSix
   case cru
   case runs
@@ -211,7 +211,7 @@ extension MusicType {
 
 
 extension MusicType: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     switch self {
     case .fiveSix:
       "56s"
@@ -233,7 +233,7 @@ extension MusicType: CustomStringConvertible {
       "Back Bell Combinations"
     case .comboNearMiss:
       "Combination Near Misses"
-    case .custom(name: let name, score: let score):
+    case .custom(name: let name, score: _):
       name
     }
     

@@ -2,7 +2,7 @@ import Foundation
 
 
 /// A segment of place notation at some stage.
-struct PlaceNotation {
+public struct PlaceNotation {
   let stage: Stage
   private let changes: [RawRow]
   
@@ -25,21 +25,21 @@ struct PlaceNotation {
 }
 
 extension PlaceNotation: Equatable {
-  static func == (lhs: PlaceNotation, rhs: PlaceNotation) -> Bool {
+  public static func == (lhs: PlaceNotation, rhs: PlaceNotation) -> Bool {
     return lhs.stage == rhs.stage
     && lhs.changes == rhs.changes
   }
 }
 
 extension PlaceNotation: Hashable {
-  func hash(into hasher: inout Hasher) {
+  public func hash(into hasher: inout Hasher) {
     hasher.combine(stage)
     hasher.combine(changes)
   }
 }
 
 extension PlaceNotation: ExpressibleByStringLiteral {
-  init(stringLiteral value: StringLiteralType) {
+  public init(stringLiteral value: StringLiteralType) {
     try! self.init(value)
   }
 }
@@ -87,7 +87,7 @@ extension PlaceNotation: CustomStringConvertible {
     return complete.joined()
   }
   
-  var description: String {
+  public var description: String {
     if let (a,b) = self.findPalindromicSplit() {
       return PlaceNotation.changesToString(a) + "," + PlaceNotation.changesToString(b)
     }
@@ -105,7 +105,7 @@ extension PlaceNotation {
 extension PlaceNotation {
   /// When pricking a block, used to determine which of the starting and ending
   /// rows to keep in the result.
-  enum LeadheadMode {
+  public enum LeadheadMode {
     case keepFinal, keepInitial, keepBoth, keepNeither
   }
   
@@ -120,7 +120,7 @@ extension PlaceNotation {
   /// with a LeadheadMode that drops the final row, the bell in question may
   /// not be in the specified position at the end of the returned Block, but
   /// would reach that position if one more change were made.)
-  enum RepeatCondition {
+  public enum RepeatCondition {
     case times(UInt)
     case untilRound
     case untilFalse

@@ -1,6 +1,6 @@
 import Foundation
 
-enum BellMetalError: Error {
+public enum BellMetalError: Error {
   case stageMismatch
   case invalidStage
   case invalidPlaceNotation
@@ -9,7 +9,7 @@ enum BellMetalError: Error {
 }
 
 extension BellMetalError: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     switch self {
     case .stageMismatch:
       "Stages don't match."

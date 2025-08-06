@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Splitting
 
-enum PlaceNotationParser {
+public enum PlaceNotationParser {
   
   nonisolated(unsafe)
   private static let changeRegex: Regex = /(\d+|x|-)/
