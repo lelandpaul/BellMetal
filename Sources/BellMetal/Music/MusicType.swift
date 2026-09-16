@@ -48,7 +48,7 @@ extension MusicType {
     guard rows.stage > .minor else { return 0 }
     let front = "xxxx"
     let back = (7...rows.stage.count)
-      .compactMap { Bell(rawValue: UInt8($0))?.description }
+      .compactMap { Bell(rawValue: UInt8($0 - 1))?.description }
       .joined()
     let masks = [
       front + "56" + back,
@@ -69,7 +69,7 @@ extension MusicType {
     let runSegments = (1...rows.stage.count - length+1)
       .map {
         ($0...($0+length-1))
-          .compactMap { Bell(rawValue: UInt8($0))?.description }
+          .compactMap { Bell(rawValue: UInt8($0 - 1))?.description }
           .joined()
       }
     var masks: [Mask] = []
