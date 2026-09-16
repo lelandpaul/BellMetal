@@ -216,7 +216,7 @@ extension PlaceNotation {
   public var leadhead: Row {
     Row(
       stage: stage,
-      row: changes.reduce(into: stage.rounds.row) { $0 = $0 * $1 }
+      row: changes.reduce(into: stage.rounds.row) { $0 = $0.composePermutation($1, rawStage: stage.rawValue) }
     )
   }
 }
