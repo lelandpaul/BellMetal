@@ -21,38 +21,48 @@ public enum Stage: UInt8, Sendable {
 }
 
 extension Stage {
+  /// Creates the stage with the given number of bells (1...16).
+  /// - Precondition: `count` must be between 1 and 16, inclusive.
   public init(_ count: Int) {
     precondition(count >= 1 && count <= 16, "Invalid Stage number: \(count).")
     self.init(rawValue: UInt8(count - 1))! // Safe: precondition
   }
-  
+
+  /// The number of bells on this stage, e.g. 8 for `.major`.
   public var count: Int {
     Int(rawValue) + 1
   }
-  
+
+  /// Whether this stage has an even number of bells.
   public var even: Bool {
     count.isMultiple(of: 2)
   }
 }
 
 extension Stage {
+  /// The heaviest (highest-numbered) bell on this stage.
   public var tenor: Bell {
     Bell(rawValue: rawValue)! // Safe: raw values are known to be the same
   }
-  
+
+  /// The two heaviest bells on this stage, in ringing order (e.g. 7,8 on Major).
+  /// - Precondition: the stage must have at least two bells.
   public var tenorPair: (Bell, Bell) {
     precondition(self > .one, "tenorPair requires at least two bells: \(self)")
     return (Bell(rawValue: rawValue - 1)!, Bell(rawValue: rawValue)!)
   }
-  
+
+  /// Whether the given bell exists on this stage.
   public func includes(_ bell: Bell) -> Bool {
     bell.rawValue <= self.rawValue
   }
-  
+
+  /// Every bell on this stage, from the treble to the tenor.
   public var allBells: [Bell] {
     (0...rawValue).map { Bell(rawValue: $0)! }
   }
-  
+
+  /// Rounds on this stage, e.g. "12345678" on Major.
   public var rounds: Row {
     switch self {
     case .one:
@@ -94,6 +104,7 @@ extension Stage {
 // MARK: - Comparable
 
 extension Stage: Comparable {
+  /// Stages are ordered by number of bells.
   public static func < (lhs: Stage, rhs: Stage) -> Bool {
     lhs.rawValue < rhs.rawValue
   }

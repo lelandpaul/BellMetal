@@ -6,6 +6,7 @@ public enum Bell: UInt8, Sendable {
 }
 
 extension Bell: CustomStringConvertible {
+  /// The single-character representation of this bell, e.g. "T" for bell 12.
   public var description: String {
     switch self {
     case .b1: "1"
@@ -29,6 +30,10 @@ extension Bell: CustomStringConvertible {
 }
 
 extension Bell: ExpressibleByStringLiteral {
+  /// Creates a bell from a single-character string, e.g. `"T"` for bell 12.
+  /// - Precondition: `value` must be exactly one character, and a valid bell
+  /// (one of "1"..."9", "0", "E", "T", "A", "B", "C", "D"). Use `init?(character:)`
+  /// instead when the source might not satisfy that (e.g. untrusted input).
   public init(stringLiteral value: String) {
     precondition(value.count == 1, "Invalid Bell literal: \(value)")
     guard let bell = Bell(character: value[value.startIndex]) else {
@@ -37,10 +42,12 @@ extension Bell: ExpressibleByStringLiteral {
     self = bell
   }
 
+  /// Creates a bell from a single valid bell character. See `init(stringLiteral:)`.
   public init(_ character: Character) {
     self.init(stringLiteral: String(character))
   }
 
+  /// Creates a bell from a single valid bell character. See `init(stringLiteral:)`.
   public init(_ character: Substring) {
     self.init(stringLiteral: String(character))
   }
@@ -75,6 +82,7 @@ extension Bell {
 }
 
 extension Bell: Comparable {
+  /// Bells are ordered from lightest (treble) to heaviest (tenor).
   public static func < (lhs: Bell, rhs: Bell) -> Bool {
     lhs.rawValue < rhs.rawValue
   }

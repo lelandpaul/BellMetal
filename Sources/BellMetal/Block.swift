@@ -4,6 +4,7 @@ import Foundation
 /// enforcing a consistent stage and in keeping a Set
 /// for quick truth-checking.
 public struct Block: Sendable {
+  /// The stage (number of bells) every row in this block belongs to.
   public let stage: Stage
   internal let rows: [RawRow]
   internal let rowSet: Set<RawRow>
@@ -35,6 +36,7 @@ extension Block: ExpressibleByArrayLiteral {
 }
 
 extension Block: CustomStringConvertible {
+  /// A description listing every row in the block, in order.
   public var description: String {
     let rows = self.rows.map { Row(stage: self.stage, row: $0) }
     return "Block(\(rows)"
@@ -84,6 +86,7 @@ extension Block: Codable {
 }
 
 extension Block {
+  /// The row at the given (0-indexed) position in the block.
   public subscript(_ index: Int) -> Row {
     Row(stage: self.stage, row: self.rows[index])
   }
@@ -91,11 +94,15 @@ extension Block {
 
 // MARK: - Helpers
 extension Block {
+  /// The number of rows in the block, including any repeats.
   public var count: Int { rows.count }
+  /// The number of distinct rows in the block, i.e. `count` minus any repeats.
   public var uniqueCount: Int { rowSet.count }
+  /// The first row in the block. A block can never be empty.
   public var first: Row {
     Row.init(stage: stage, row: rows.first!) // Safe: Not possible to construct empty Block
   }
+  /// The last row in the block. A block can never be empty.
   public var last: Row {
     Row.init(stage: stage, row: rows.last!) // Safe: Not possible to construct empty Block
   }

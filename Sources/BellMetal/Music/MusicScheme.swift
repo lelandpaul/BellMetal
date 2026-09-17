@@ -1,12 +1,19 @@
 import Foundation
 
+/// A scheme for scoring the musicality of a block.
+/// The default, `.shared`, mimics [CompLib](complib.org)'s
+/// default music scheme as far as possible. `\Block.musicScore`
+/// uses `.shared` by default.
 public struct MusicScheme: Sendable {
   let scheme: [(type: MusicType, weight: Int)]
   
+  /// Creates a scheme from a list of music types and their weights (positive
+  /// to reward, negative to penalize).
   public init(_ scheme: [(MusicType, weight: Int)]) {
     self.scheme = scheme
   }
-  
+
+  /// The default scheme, mimicking [CompLib](complib.org)'s as closely as possible.
   public static let shared: MusicScheme = .init([
     (type: .fiveSix, weight: 1),
     (type: .cru, weight: 1),
@@ -21,34 +28,63 @@ public struct MusicScheme: Sendable {
 }
 
 extension MusicScheme {
-  public func score(_ block: Block) -> Int {
+  /// Compute the overall music score for a given `Block`.
+  /// - Parameter block: The `Block` to score.
+  /// - Parameter backstrokeStart: Whether to score the `Block` as though
+  /// the first row is a backstroke.
+  /// - Returns: A score.
+  public func score(_ block: Block, backstrokeStart: Bool = false) -> Int {
     scheme.reduce(into: 0) { result, pair in
       result += pair.type.score(block) * pair.weight
     }
   }
   
-  public func score(_ rows: [Row]) -> Int {
-    score(Block(rows))
+  /// Compute the overall music score for a sequence of `Row`s.
+  /// - Parameter rows: The `Row`s to score
+  /// - Parameter backstrokeStart: Whether to score the `Row`s as
+  /// though the first row is a backstroke.
+  /// - Returns: A score.
+  public func score(_ rows: [Row], backstrokeStart: Bool = false) -> Int {
+    score(Block(rows), backstrokeStart: backstrokeStart)
   }
   
+  /// One music type's contribution to an overall score: its raw occurrence
+  /// count (`score`) already multiplied by its `weight`.
   public typealias ScoreDetail = (type: MusicType, weight: Int, score: Int)
   
-  public func scoreDetails(_ block: Block) -> [ScoreDetail] {
+  /// Get a breakdown by `MusicType` of the score for a given `Block`.
+  /// - Parameter block: The `Block` to score.
+  /// - Parameter backstrokeStart: Whether to score the `Block` as
+  /// though the first row is a backstroke.
+  /// - Returns: A summary of the score by `MusicType.`
+  public func scoreDetails(_ block: Block, backstrokeStart: Bool = false) -> [ScoreDetail] {
     scheme.map { pair in
-      (type: pair.type, weight: pair.weight, score: pair.type.score(block) * pair.weight)
+      (type: pair.type, weight: pair.weight, score: pair.type.score(block, backstrokeStart: backstrokeStart) * pair.weight)
     }
   }
   
-  public func scoreDetails(_ rows: [Row]) -> [ScoreDetail] {
-    scoreDetails(Block(rows))
+  /// Get a breakdown by `MusicType` of the score for a given sequence of Rows.
+  /// - Parameter rows: The `Row`s to score.
+  /// - Parameter backstrokeStart: Whether to score the `Row`s as
+  /// though the first row is a backstroke.
+  /// - Returns: A summary of the score by `MusicType.`
+  public func scoreDetails(_ rows: [Row], backstrokeStart: Bool = false) -> [ScoreDetail] {
+    scoreDetails(Block(rows), backstrokeStart: backstrokeStart)
   }
 }
 
 extension Block {
-  public func musicScore(_ scheme: MusicScheme = .shared) -> Int {
-    scheme.score(self)
+  /// Get the music score on a given scheme, defaulting to `.shared`.
+  /// - Parameter scheme: The scheme to score on.
+  /// - Parameter backstrokeStart: Whether to score the `Row`s as
+  /// though the first row is a backstroke.
+  /// - Returns: The score.
+  public func musicScore(_ scheme: MusicScheme = .shared, backstrokeStart: Bool = false) -> Int {
+    scheme.score(self, backstrokeStart: backstrokeStart)
   }
-
+  /// Get a breakdown of the music score by `MusicType` on some scheme, defaulting to `.shared`.
+  /// - Parameter scheme: The scheme to score on.
+  /// - Returns: The score breakdown.
   public func musicScoreDetails(_ scheme: MusicScheme = .shared) -> [MusicScheme.ScoreDetail] {
     scheme.scoreDetails(self)
   }

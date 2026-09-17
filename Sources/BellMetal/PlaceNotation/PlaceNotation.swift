@@ -131,6 +131,8 @@ extension PlaceNotation: CustomStringConvertible {
 }
 
 extension PlaceNotation {
+  /// Applies a place notation's overall transposition (its `leadhead`) to a row.
+  /// - Precondition: `lhs` and `rhs` must share a stage.
   public static func *(lhs: Row, rhs: PlaceNotation) -> Row {
     precondition(lhs.stage == rhs.stage)
     return lhs * rhs.leadhead
@@ -200,7 +202,7 @@ extension PlaceNotation {
   ///   - leadheadMode: Which of the first or last rows to keep.
   ///   (E.g. when pricking a round block, should rounds appear at
   ///   the beginning or the end of the block?) Defaults to .keepFinal.
-  ///   - repeat: Variadic; the conditions under which to stop repetition.
+  ///   - repeatConditions: Variadic; the conditions under which to stop repetition.
   ///   Repetition will continue until any one of these are met.
   ///   If no arguments are given, the place notation will be pricked once
   ///   and not repeated. This is equivalent to .times(1)
@@ -243,6 +245,7 @@ extension PlaceNotation {
 
 // MARK: - Useful facts
 extension PlaceNotation {
+  /// The number of individual changes in this place notation.
   public var count: Int {
     changes.count
   }
