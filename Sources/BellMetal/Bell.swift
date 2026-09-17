@@ -1,11 +1,12 @@
 import Foundation
 
 /// An enum representing an individual bell.
-public enum Bell: UInt8 {
+public enum Bell: UInt8, Sendable {
   case b1, b2, b3, b4, b5, b6, b7, b8, b9, b0, bE, bT, bA, bB, bC, bD
 }
 
 extension Bell: CustomStringConvertible {
+  /// The single-character representation of this bell, e.g. "T" for bell 12.
   public var description: String {
     switch self {
     case .b1: "1"
@@ -29,9 +30,36 @@ extension Bell: CustomStringConvertible {
 }
 
 extension Bell: ExpressibleByStringLiteral {
+  /// Creates a bell from a single-character string, e.g. `"T"` for bell 12.
+  /// - Precondition: `value` must be exactly one character, and a valid bell
+  /// (one of "1"..."9", "0", "E", "T", "A", "B", "C", "D"). Use `init?(character:)`
+  /// instead when the source might not satisfy that (e.g. untrusted input).
   public init(stringLiteral value: String) {
     precondition(value.count == 1, "Invalid Bell literal: \(value)")
-    switch value {
+    guard let bell = Bell(character: value[value.startIndex]) else {
+      fatalError("Invalid Bell literal: \(value)")
+    }
+    self = bell
+  }
+
+  /// Creates a bell from a single valid bell character. See `init(stringLiteral:)`.
+  public init(_ character: Character) {
+    self.init(stringLiteral: String(character))
+  }
+
+  /// Creates a bell from a single valid bell character. See `init(stringLiteral:)`.
+  public init(_ character: Substring) {
+    self.init(stringLiteral: String(character))
+  }
+}
+
+extension Bell {
+  /// Safe, failable construction from a single-character representation of a bell
+  /// (one of "1"..."9", "0", "E", "T", "A", "B", "C", "D"). Returns nil for any
+  /// other character, rather than trapping like the ExpressibleByStringLiteral
+  /// initializer -- use this when the character comes from untrusted input.
+  public init?(character: Character) {
+    switch character {
     case "1": self = .b1
     case "2": self = .b2
     case "3": self = .b3
@@ -48,21 +76,34 @@ extension Bell: ExpressibleByStringLiteral {
     case "B": self = .bB
     case "C": self = .bC
     case "D": self = .bD
-    default: fatalError("Invalid Bell literal: \(value)")
+    default: return nil
     }
-  }
-  
-  public init(_ character: Character) {
-    self.init(stringLiteral: String(character))
-  }
-  
-  public init(_ character: Substring) {
-    self.init(stringLiteral: String(character))
   }
 }
 
 extension Bell: Comparable {
+  /// Bells are ordered from lightest (treble) to heaviest (tenor).
   public static func < (lhs: Bell, rhs: Bell) -> Bool {
     lhs.rawValue < rhs.rawValue
+  }
+}
+
+// MARK: - Codable
+
+extension Bell: Codable {
+  /// Encodes/decodes as its single-character representation (e.g. "T" for bell
+  /// 12), matching its string-literal form, not the raw enum value.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let string = try container.decode(String.self)
+    guard string.count == 1, let bell = Bell(character: string[string.startIndex]) else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid Bell character: \(string)")
+    }
+    self = bell
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(description)
   }
 }

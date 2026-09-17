@@ -17,7 +17,31 @@ struct PnParsingTests {
     let expected = ["-", "12", "34", "-"]
     #expect(PNP.splitToChanges(pn) == expected)
   }
-  
+
+  @Test func splitCompoundChangesWithLetterPlaces() {
+    // Places above bell 10 use E,T,A,B,C,D (see interpretPlace/representPlace).
+    // A compound change mixing digits and letters must stay one token.
+    #expect(PNP.splitToChanges("1E") == ["1E"])
+    #expect(PNP.splitToChanges("90ET") == ["90ET"])
+    // A change consisting solely of a letter must not be dropped entirely.
+    #expect(PNP.splitToChanges("E") == ["E"])
+    #expect(PNP.splitToChanges("x1E.T4x") == ["x", "1E", "T4", "x"])
+  }
+
+  @Test func parsePlacesWithLetters() throws {
+    #expect(try PNP.parsePlaces("1E") == [1, 11])
+    #expect(try PNP.parsePlaces("90ET") == [9, 10, 11, 12])
+  }
+
+  @Test func placeNotationRoundTripWithLetterPlaces() throws {
+    // Places 2, 11 (E), and 12 (T) made explicit on Maximus; inference adds
+    // place 1 (since place 2 is even) leaving {1,2,11,12} made overall.
+    // Before the tokenizer recognized letter places, "2E" parsed as "2" alone,
+    // silently losing the made place at 11 and 12 and producing the wrong row.
+    let pn = try PlaceNotation(string: "2E", at: .maximus)
+    #expect(pn.leadhead == "1243658709ET")
+  }
+
   @Test func palindromeHelper() {
     #expect([1,2,3].makePalindrome() == [1,2,3,2,1])
     #expect([1].makePalindrome() == [1])
@@ -37,13 +61,20 @@ struct PnParsingTests {
     #expect(PNP.splitAndExpandPalindrome(test) == expected_test)
   }
   
-  @Test func inferStage() {
+  @Test func inferStage() throws {
     let doubles = [[5],[1],[5],[1],[5]]
-    #expect(PNP.inferStage(doubles) == .doubles)
+    #expect(try PNP.inferStage(doubles) == .doubles)
     let minor = [[1,2],[3,4],[5,6],[1,2]]
-    #expect(PNP.inferStage(minor) == .minor)
+    #expect(try PNP.inferStage(minor) == .minor)
     let withCrossChange = [[],[5]]
-    #expect(PNP.inferStage(withCrossChange) == .minor)
+    #expect(try PNP.inferStage(withCrossChange) == .minor)
+  }
+
+  @Test func inferStageThrowsWhenNoPlacesGiven() {
+    // An all-cross set of changes carries no place numbers to infer from.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.inferStage([[], []])
+    }
   }
   
   @Test func inferExternalPlaces() {
@@ -87,21 +118,42 @@ struct PnParsingTests {
     let pb4 = "x4x4,2"
     let pb4_changes: [Row] = ["2143", "1324", "2143", "1324", "2143", "1324", "2143", "1243"]
     let expectedPb4 = PlaceNotation(stage: .minimus, changes: pb4_changes.map(\.row))
-    #expect(try PlaceNotation(pb4) == expectedPb4)
+    #expect(try PlaceNotation(string: pb4) == expectedPb4)
 
     let g5 = "3,1.5.1.5.1"
     let g5_changes: [Row] = ["21354", "13254", "21435", "13254", "21435", "13254", "21435", "13254", "21435", "13254"]
     let expectedG5 = PlaceNotation(stage: .doubles, changes: g5_changes.map(\.row))
-    #expect(try PlaceNotation(g5) == expectedG5)
+    #expect(try PlaceNotation(string: g5) == expectedG5)
   }
-  
+
   @Test func parsePNWithExplicitStage() throws {
     let lb6: PlaceNotation = "6:x4x4,2"
-    print(lb6)
-    #expect(try lb6 == PlaceNotation("x4x4,2", at: .minor))
-    
-    let invalid: PlaceNotation? = try? PlaceNotation("4:x4x4,2", at: .minor)
+    #expect(try lb6 == PlaceNotation(string: "x4x4,2", at: .minor))
+
+    let invalid: PlaceNotation? = try? PlaceNotation(string: "4:x4x4,2", at: .minor)
     #expect(invalid == nil)
+  }
+
+  @Test func explicitStageSupportsFullBellRange() throws {
+    // The stage prefix uses the same one-character-per-bell convention as
+    // Bell, so it can express any stage, not just 1 through 9.
+    let royal: PlaceNotation = "0:34" // "0" = 10 (Royal)
+    #expect(try royal == PlaceNotation(string: "34", at: .royal))
+
+    let maximus: PlaceNotation = "T:x1T" // "T" = 12 (Maximus)
+    #expect(try maximus == PlaceNotation(string: "x1T", at: .maximus))
+
+    let sixteen: PlaceNotation = "D:x1D" // "D" = 16 (Sixteen)
+    #expect(try sixteen == PlaceNotation(string: "x1D", at: .sixteen))
+  }
+
+  @Test func getExplicitStageSupportsFullBellRange() throws {
+    #expect(try PNP.getExplicitStage("6:12").0 == .minor)
+    #expect(try PNP.getExplicitStage("0:34").0 == .royal)
+    #expect(try PNP.getExplicitStage("E:34").0 == .cinques)
+    #expect(try PNP.getExplicitStage("T:x1T").0 == .maximus)
+    #expect(try PNP.getExplicitStage("D:x1D").0 == .sixteen)
+    #expect(try PNP.getExplicitStage("no-prefix-here").0 == nil)
   }
 }
 

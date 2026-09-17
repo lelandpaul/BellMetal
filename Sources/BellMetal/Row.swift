@@ -2,8 +2,9 @@ import Foundation
 
 /// A representation of an individual row, i.e. an arbitrary permutation
 /// on some number of bells.
-public struct Row: Equatable, Hashable {
-  let stage: Stage
+public struct Row: Equatable, Hashable, Sendable {
+  /// The stage (number of bells) this row belongs to.
+  public let stage: Stage
   internal let row: RawRow
   
   internal init(stage: Stage, row: RawRow) {
@@ -15,33 +16,80 @@ public struct Row: Equatable, Hashable {
 // MARK: - Literals
 extension Row: ExpressibleByArrayLiteral {
   public typealias ArrayLiteralElement = Bell
-  
+
   public init(arrayLiteral elements: Bell...) {
     self.init(elements)
   }
-  
+
+  /// Creates a row from an array of bells, e.g. `[.b2, .b1, .b3]` is "213".
+  /// - Precondition: the array must be a valid permutation -- see
+  /// `init(validating:)` for the throwing equivalent, which is safe to use
+  /// on untrusted input.
   public init(_ array: [Bell]) {
+    do {
+      try self.init(validating: array)
+    } catch {
+      fatalError("Invalid Row literal: \(array)")
+    }
+  }
+}
+
+extension Row: ExpressibleByStringLiteral {
+  /// Creates a row from its string representation, e.g. "14235".
+  /// - Precondition: the string must be a valid permutation -- see
+  /// `init(validating:)` for the throwing equivalent, which is safe to use
+  /// on untrusted input.
+  public init(stringLiteral value: String) {
+    do {
+      try self.init(validating: value)
+    } catch {
+      fatalError("Invalid Row literal: \(value)")
+    }
+  }
+}
+
+// MARK: - Safe construction
+
+extension Row {
+  /// Safe, throwing construction from an array of Bells. Throws `.invalidBell`
+  /// if the array isn't a valid permutation: wrong length (must be 1...16),
+  /// a duplicate bell, or a bell outside the range implied by the array's length.
+  public init(validating array: [Bell]) throws {
+    guard array.count >= 1 && array.count <= 16 else {
+      throw BellMetalError.invalidBell
+    }
     let stage = Stage(array.count)
     guard array.min() == .b1,
           array.max() == stage.tenor,
           Set(array).count == stage.count
-    else { fatalError("Invalid Row literal: \(array)") }
+    else {
+      throw BellMetalError.invalidBell
+    }
     var row = RawRow.zero
     for (i, b) in array.enumerated() {
       row |= RawRow(b.rawValue) << (4 * i)
     }
     self.init(stage: stage, row: row)
   }
-}
 
-extension Row: ExpressibleByStringLiteral {
-  public init(stringLiteral value: String) {
-    let parsed = value.map(Bell.init)
-    self.init(parsed)
+  /// Safe, throwing construction from a string representation, e.g. "1234".
+  /// Throws `.invalidBell` if any character isn't a valid bell, or if the
+  /// resulting bells don't form a valid permutation (see `init(validating:)`
+  /// above). Use this instead of the crashing string-literal initializer when
+  /// the string comes from untrusted input.
+  public init(validating string: String) throws {
+    let bells = try string.map { character -> Bell in
+      guard let bell = Bell(character: character) else {
+        throw BellMetalError.invalidBell
+      }
+      return bell
+    }
+    try self.init(validating: bells)
   }
 }
 
 extension Row: CustomStringConvertible {
+  /// The string representation of this row, e.g. "14235".
   public var description: String {
     var result: [String] = []
     var row = self.row
@@ -54,13 +102,34 @@ extension Row: CustomStringConvertible {
   }
 }
 
+// MARK: - Codable
+
+extension Row: Codable {
+  /// Encodes/decodes as its string representation (e.g. "14235"), not the
+  /// internal bit-packed storage.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let string = try container.decode(String.self)
+    do {
+      try self.init(validating: string)
+    } catch {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid Row: \(string)")
+    }
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(description)
+  }
+}
+
 // MARK: - Subscripts
 
 extension Row {
   
   /// Safely retrieve the bell at a given 1-indexed position;
   /// nil if the position is invalid for the stage.
-  func bell(at pos: Int) -> Bell? {
+  public func bell(at pos: Int) -> Bell? {
     guard pos > 0 && pos <= self.stage.count else { return nil }
     return self[pos]
   }
@@ -172,8 +241,15 @@ extension Row {
 }
 
 extension Row {
+  /// Builds a Row from 1-indexed bell numbers (e.g. `Row([1,2,3])` is rounds on singles),
+  /// matching the convention used by Bell's string/character initializers.
   init(_ row: [Int]) {
-    self.init(row.map { Bell(rawValue: UInt8($0)) ?? .b1 }) // Will fail if an invalid bell is included
+    self.init(row.map { value -> Bell in
+      guard let bell = Bell(rawValue: UInt8(value - 1)) else {
+        fatalError("Invalid bell number: \(value)")
+      }
+      return bell
+    })
   }
 }
 

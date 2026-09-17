@@ -3,7 +3,8 @@ import Foundation
 /// An ordered sequence of rows. Differs from [Row] in
 /// enforcing a consistent stage and in keeping a Set
 /// for quick truth-checking.
-public struct Block {
+public struct Block: Sendable {
+  /// The stage (number of bells) every row in this block belongs to.
   public let stage: Stage
   internal let rows: [RawRow]
   internal let rowSet: Set<RawRow>
@@ -35,6 +36,7 @@ extension Block: ExpressibleByArrayLiteral {
 }
 
 extension Block: CustomStringConvertible {
+  /// A description listing every row in the block, in order.
   public var description: String {
     let rows = self.rows.map { Row(stage: self.stage, row: $0) }
     return "Block(\(rows)"
@@ -60,7 +62,31 @@ extension Block: Hashable {
   }
 }
 
+// MARK: - Codable
+
+extension Block: Codable {
+  /// Encodes/decodes as a plain array of Rows, not the internal
+  /// bit-packed storage (or the redundant rowSet cache).
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let rows = try container.decode([Row].self)
+    guard !rows.isEmpty else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Block cannot be empty")
+    }
+    guard Set(rows.map(\.stage)).count == 1 else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Block rows have inconsistent stages")
+    }
+    self.init(rows)
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(Array(self))
+  }
+}
+
 extension Block {
+  /// The row at the given (0-indexed) position in the block.
   public subscript(_ index: Int) -> Row {
     Row(stage: self.stage, row: self.rows[index])
   }
@@ -68,13 +94,17 @@ extension Block {
 
 // MARK: - Helpers
 extension Block {
+  /// The number of rows in the block, including any repeats.
   public var count: Int { rows.count }
+  /// The number of distinct rows in the block, i.e. `count` minus any repeats.
   public var uniqueCount: Int { rowSet.count }
+  /// The first row in the block. A block can never be empty.
   public var first: Row {
     Row.init(stage: stage, row: rows.first!) // Safe: Not possible to construct empty Block
   }
-  public var last: Row? {
-    Row.init(stage: stage, row: rows.last!) // Safe: Not possible to construct tempty Block
+  /// The last row in the block. A block can never be empty.
+  public var last: Row {
+    Row.init(stage: stage, row: rows.last!) // Safe: Not possible to construct empty Block
   }
   
   /// Separates the rows into two blocks by stroke parity.

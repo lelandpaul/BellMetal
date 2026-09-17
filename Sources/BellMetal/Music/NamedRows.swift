@@ -1,25 +1,67 @@
 import Foundation
 
-public enum NamedRow: Equatable, Hashable, CaseIterable {
+/// A well-known "special" row, often used as a target when composing or
+/// scoring music. Not every named row is defined at every stage -- see
+/// `row(at:)`.
+public enum NamedRow: Equatable, Hashable, CaseIterable, Sendable {
+  /// Rounds reversed, e.g. "87654321" on Major.
   case backrounds
+  /// A "spread" variant of `tittums`, with the front half reversed.
   case explodedtittums
+  /// A well-known named row (defined per-stage, from Doubles upward).
   case hagdyke
+  /// Rounds with the first and last bells fixed and every other adjacent pair swapped.
   case intermediate
+  /// A well-known named row (defined per-stage, from Doubles upward).
   case jacks
+  /// `jacks` combined with the `intermediate` transposition.
   case jokers
+  /// The odd bells descending, followed by the even bells ascending, e.g. "531246" on Minor.
   case kings
+  /// `kings` with the first two bells swapped.
   case princes
+  /// `queens` with the middle two bells swapped.
   case princesses
+  /// The odd bells ascending, followed by the even bells ascending, e.g. "135246" on Minor.
   case queens
+  /// The bells in their home positions, e.g. "12345678" on Major.
   case rounds
+  /// The front and back halves of rounds interleaved, e.g. "15263748" on Major.
   case tittums
+  /// A well-known named row, defined only for Minor through Royal.
   case whittingtons
+  /// A well-known named row, defined only on Major.
   case rollercoaster
+  /// A well-known named row, defined only on Major.
   case seesaw
+  /// A well-known named row, defined only on Major.
   case sawsee
 }
 
+// MARK: - Codable
+
+extension NamedRow: Codable {
+  /// Encodes/decodes as the case name (e.g. "backrounds"), spelled out
+  /// explicitly here rather than relying on synthesis, since a plain
+  /// no-associated-values enum's default synthesized representation isn't
+  /// guaranteed to be this simple string form.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let name = try container.decode(String.self)
+    guard let namedRow = NamedRow.allCases.first(where: { "\($0)" == name }) else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid NamedRow: \(name)")
+    }
+    self = namedRow
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode("\(self)")
+  }
+}
+
 extension NamedRow {
+  /// This named row at the given stage, or nil if it isn't defined there.
   public func row(at stage: Stage) -> Row? {
     switch self {
     case .backrounds:
@@ -108,7 +150,7 @@ extension NamedRow {
   }
   
   private func intermediateChange(at stage: Stage) -> PlaceNotation {
-    (stage.even ? try! PlaceNotation("1\(stage.count)") : "1")
+    (stage.even ? try! PlaceNotation(string: "1\(stage.count)") : "1")
   }
   
   private func queens(at stage: Stage) -> Row {

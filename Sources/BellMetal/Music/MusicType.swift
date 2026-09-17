@@ -1,21 +1,101 @@
 import Foundation
 
+/// A category of music that a `Block` of rows can be scored against.
+/// Use `MusicScheme` to combine several types into a weighted overall score.
 public enum MusicType: Sendable {
+  /// 5 and 6 together, in either order, at the front or back of the row.
   case fiveSix
+  /// One of a fixed set of four-bell combinations at the front or back of the row (Major only).
   case cru
+  /// A run of (at least) 4 consecutive bells, ascending or descending, at the front or back.
   case runs
+  /// A run of the given length, ascending or descending, at the front or back.
   case run(length: Int)
+  /// Rounds, Backrounds, Queens, or Tittums split across the seam between two consecutive rows.
   case wrap
+  /// A row matching one of the well-known `NamedRow`s.
   case namedRow
+  /// A row matching one of a stage-specific set of near-miss combinations.
   case namedRowCombo
+  /// The two tenors swapped at backstroke.
   case tenorsReversed
+  /// A well-known combination of the back four bells (Major only).
   case backBellCombo
+  /// A row where every bell is at most one place from its home position.
   case comboNearMiss
+  /// A user-supplied scoring function, identified by `name`.
   case custom(name: String, score: @Sendable (Block) -> Int)
 }
 
+// MARK: - Codable
+
+extension MusicType: Codable {
+  private enum CodingKeys: String, CodingKey {
+    case kind
+    case length
+  }
+
+  /// Every case round-trips except `.custom`, which carries a closure and so
+  /// can never be encoded or decoded -- encoding throws `EncodingError`, and
+  /// decoding a `.custom`-tagged payload throws `DecodingError`.
+  private enum Kind: String, Codable {
+    case fiveSix, cru, runs, run, wrap, namedRow, namedRowCombo, tenorsReversed, backBellCombo, comboNearMiss, custom
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    switch try container.decode(Kind.self, forKey: .kind) {
+    case .fiveSix: self = .fiveSix
+    case .cru: self = .cru
+    case .runs: self = .runs
+    case .run: self = .run(length: try container.decode(Int.self, forKey: .length))
+    case .wrap: self = .wrap
+    case .namedRow: self = .namedRow
+    case .namedRowCombo: self = .namedRowCombo
+    case .tenorsReversed: self = .tenorsReversed
+    case .backBellCombo: self = .backBellCombo
+    case .comboNearMiss: self = .comboNearMiss
+    case .custom:
+      throw DecodingError.dataCorruptedError(
+        forKey: .kind,
+        in: container,
+        debugDescription: "MusicType.custom cannot be decoded -- it carries a closure"
+      )
+    }
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    switch self {
+    case .fiveSix: try container.encode(Kind.fiveSix, forKey: .kind)
+    case .cru: try container.encode(Kind.cru, forKey: .kind)
+    case .runs: try container.encode(Kind.runs, forKey: .kind)
+    case .run(let length):
+      try container.encode(Kind.run, forKey: .kind)
+      try container.encode(length, forKey: .length)
+    case .wrap: try container.encode(Kind.wrap, forKey: .kind)
+    case .namedRow: try container.encode(Kind.namedRow, forKey: .kind)
+    case .namedRowCombo: try container.encode(Kind.namedRowCombo, forKey: .kind)
+    case .tenorsReversed: try container.encode(Kind.tenorsReversed, forKey: .kind)
+    case .backBellCombo: try container.encode(Kind.backBellCombo, forKey: .kind)
+    case .comboNearMiss: try container.encode(Kind.comboNearMiss, forKey: .kind)
+    case .custom(let name, _):
+      throw EncodingError.invalidValue(self, EncodingError.Context(
+        codingPath: encoder.codingPath,
+        debugDescription: "MusicType.custom(\"\(name)\") cannot be encoded -- it carries a closure"
+      ))
+    }
+  }
+}
+
 extension MusicType {
-  public func score(_ rows: Block) -> Int {
+  /// Counts how many times this music type occurs in `rows`.
+  /// - Parameter rows: The block to score.
+  /// - Parameter backstrokeStart: Whether to treat the first row as a
+  /// backstroke, for music types (like `.tenorsReversed`) that only count
+  /// backstroke rows.
+  /// - Returns: The count.
+  public func score(_ rows: Block, backstrokeStart: Bool = false) -> Int {
     switch self {
     case .fiveSix:
       MusicType.scoreFiveSix(rows)
@@ -32,7 +112,7 @@ extension MusicType {
     case .namedRowCombo:
       MusicType.scoreNamedRowCombos(rows)
     case .tenorsReversed:
-      MusicType.scoreTenorsReversed(rows)
+      MusicType.scoreTenorsReversed(rows, backstrokeStart: backstrokeStart)
     case .backBellCombo:
       MusicType.scoreBackBellCombo(rows)
     case .comboNearMiss:
@@ -48,14 +128,14 @@ extension MusicType {
     guard rows.stage > .minor else { return 0 }
     let front = "xxxx"
     let back = (7...rows.stage.count)
-      .compactMap { Bell(rawValue: UInt8($0))?.description }
+      .compactMap { Bell(rawValue: UInt8($0 - 1))?.description }
       .joined()
     let masks = [
       front + "56" + back,
       front + "65" + back,
       "56" + back + front,
       "65" + back + front
-    ].compactMap { try? Mask($0) }
+    ].compactMap { try? Mask(string: $0) }
     return (try? rows.count(matchingAny: masks)) ?? 0
   }
   
@@ -69,15 +149,15 @@ extension MusicType {
     let runSegments = (1...rows.stage.count - length+1)
       .map {
         ($0...($0+length-1))
-          .compactMap { Bell(rawValue: UInt8($0))?.description }
+          .compactMap { Bell(rawValue: UInt8($0 - 1))?.description }
           .joined()
       }
     var masks: [Mask] = []
     runSegments.forEach { seg in
-      if let m = try? Mask(seg + empty) { masks.append(m) }
-      if let m = try? Mask(seg.reversed() + empty) { masks.append(m) }
-      if let m = try? Mask(empty + seg) { masks.append(m) }
-      if let m = try? Mask(empty + seg.reversed()) { masks.append(m) }
+      if let m = try? Mask(string: seg + empty) { masks.append(m) }
+      if let m = try? Mask(string: seg.reversed() + empty) { masks.append(m) }
+      if let m = try? Mask(string: empty + seg) { masks.append(m) }
+      if let m = try? Mask(string: empty + seg.reversed()) { masks.append(m) }
     }
     return (try? rows.count(matchingAny: masks)) ?? 0
   }
@@ -115,8 +195,8 @@ extension MusicType {
       let suffix = Array(repeating: "x", count: row.stage.count - i).joined()
       let rowA = row.prefix(row.stage.count - i).map({ $0.description }).joined()
       let rowB = row.suffix(i).map({ $0.description }).joined()
-      guard let maskA = try? Mask(prefix+rowA),
-            let maskB = try? Mask(rowB+suffix) else {
+      guard let maskA = try? Mask(string: prefix+rowA),
+            let maskB = try? Mask(string: rowB+suffix) else {
         return nil
       }
       return (maskA, maskB)
@@ -162,9 +242,10 @@ extension MusicType {
     _ rows: Block,
     backstrokeStart: Bool = false
   ) -> Int {
+    guard rows.stage > .one else { return 0 }
     let (nearTenor, tenor) = rows.stage.tenorPair
     let mask = try? Mask(
-      Array(repeating: "x", count: rows.stage.count - 2).joined() +
+      string: Array(repeating: "x", count: rows.stage.count - 2).joined() +
       tenor.description + nearTenor.description
     )
     guard let mask else { return 0 }

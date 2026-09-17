@@ -2,7 +2,7 @@ import Foundation
 
 
 /// A segment of place notation at some stage.
-public struct PlaceNotation {
+public struct PlaceNotation: Sendable {
   let stage: Stage
   private let changes: [RawRow]
   
@@ -11,14 +11,14 @@ public struct PlaceNotation {
     self.changes = changes
   }
   
-  public init(_ pn: String, at stage: Stage? = nil) throws {
-    let (explicitStage, pn) = try PlaceNotationParser.getExplicitStage(pn)
+  public init(string: String, at stage: Stage? = nil) throws {
+    let (explicitStage, string) = try PlaceNotationParser.getExplicitStage(string)
     if explicitStage != nil,
        stage != nil,
        explicitStage != stage {
       throw BellMetalError.invalidPlaceNotation
     }
-    let (knownStage, changes) = try PlaceNotationParser.parseAllChanges(pn, at: stage ?? explicitStage)
+    let (knownStage, changes) = try PlaceNotationParser.parseAllChanges(string, at: stage ?? explicitStage)
     self.stage = knownStage
     self.changes = changes
   }
@@ -40,7 +40,42 @@ extension PlaceNotation: Hashable {
 
 extension PlaceNotation: ExpressibleByStringLiteral {
   public init(stringLiteral value: StringLiteralType) {
-    try! self.init(value)
+    try! self.init(string: value)
+  }
+}
+
+// MARK: - Codable
+
+extension PlaceNotation: Codable {
+  private enum CodingKeys: String, CodingKey {
+    case stage
+    case notation
+  }
+
+  /// Encodes/decodes as `{"stage": <bell count>, "notation": "<place notation
+  /// string>"}`, rather than the internal representation. A keyed structure
+  /// (rather than just the notation string) is needed because the stage can't
+  /// always be recovered from the notation alone -- e.g. an all-cross
+  /// notation like "x" carries no place numbers to infer a stage from.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    let stage = try container.decode(Stage.self, forKey: .stage)
+    let notation = try container.decode(String.self, forKey: .notation)
+    do {
+      try self.init(string: notation, at: stage)
+    } catch {
+      throw DecodingError.dataCorruptedError(
+        forKey: .notation,
+        in: container,
+        debugDescription: "Invalid PlaceNotation \"\(notation)\" at stage \(stage)"
+      )
+    }
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(stage, forKey: .stage)
+    try container.encode(description, forKey: .notation)
   }
 }
 
@@ -96,6 +131,8 @@ extension PlaceNotation: CustomStringConvertible {
 }
 
 extension PlaceNotation {
+  /// Applies a place notation's overall transposition (its `leadhead`) to a row.
+  /// - Precondition: `lhs` and `rhs` must share a stage.
   public static func *(lhs: Row, rhs: PlaceNotation) -> Row {
     precondition(lhs.stage == rhs.stage)
     return lhs * rhs.leadhead
@@ -165,7 +202,7 @@ extension PlaceNotation {
   ///   - leadheadMode: Which of the first or last rows to keep.
   ///   (E.g. when pricking a round block, should rounds appear at
   ///   the beginning or the end of the block?) Defaults to .keepFinal.
-  ///   - repeat: Variadic; the conditions under which to stop repetition.
+  ///   - repeatConditions: Variadic; the conditions under which to stop repetition.
   ///   Repetition will continue until any one of these are met.
   ///   If no arguments are given, the place notation will be pricked once
   ///   and not repeated. This is equivalent to .times(1)
@@ -208,6 +245,7 @@ extension PlaceNotation {
 
 // MARK: - Useful facts
 extension PlaceNotation {
+  /// The number of individual changes in this place notation.
   public var count: Int {
     changes.count
   }
@@ -216,7 +254,7 @@ extension PlaceNotation {
   public var leadhead: Row {
     Row(
       stage: stage,
-      row: changes.reduce(into: stage.rounds.row) { $0 = $0 * $1 }
+      row: changes.reduce(into: stage.rounds.row) { $0 = $0.composePermutation($1, rawStage: stage.rawValue) }
     )
   }
 }

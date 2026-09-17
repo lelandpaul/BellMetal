@@ -2,23 +2,32 @@ import Foundation
 
 // MARK: - Splitting
 
+/// The individual parsing steps behind ``PlaceNotation``'s string
+/// initializer, exposed for building custom tooling (editors, validators,
+/// etc.) around place notation text. Most callers should just use
+/// ``PlaceNotation`` directly.
 public enum PlaceNotationParser {
   
+  // `\d` only matches 0-9; place characters above bell 10 use E,T,A,B,C,D
+  // (see interpretPlace/representPlace), so they must be included explicitly
+  // or a compound change like "1T" gets split into "1" with the "T" silently lost.
   nonisolated(unsafe)
-  private static let changeRegex: Regex = /(\d+|x|-)/
+  private static let changeRegex: Regex = /([0-9ETABCD]+|x|-)/
   
   /// Given a non-symmetric PN string, extract individual changes.
-  internal static func splitToChanges(_ pn: String) -> [String] {
+  public static func splitToChanges(_ pn: String) -> [String] {
     pn.matches(of: changeRegex).map(\.0).map(String.init)
   }
-  
+
   /// Split palindromic sections
   private static func splitPalindrome(_ pn: String) -> [String] {
     pn.split(separator: ",").map(String.init)
   }
-  
-  /// Split to changes and expand palindromic subsections.
-  internal static func splitAndExpandPalindrome(_ pn:String) -> [String] {
+
+  /// Splits a place notation string into individual changes, expanding any
+  /// comma-separated palindromic sections along the way (see
+  /// ``PlaceNotation`` for the palindrome syntax).
+  public static func splitAndExpandPalindrome(_ pn:String) -> [String] {
     guard pn.contains(",") else {
       return splitToChanges(pn)
     }
@@ -38,7 +47,10 @@ extension Array {
 
 extension PlaceNotationParser {
   
-  private static func interpretPlace(_ value: Character) -> Int? {
+  /// Converts a single place character to its place number, e.g. "T" to 12,
+  /// using the same convention as `Bell`: "1"..."9", then "0", "E", "T", "A",
+  /// "B", "C", "D" for places 10 through 16. Returns nil for any other character.
+  public static func interpretPlace(_ value: Character) -> Int? {
     return switch value {
     case "1": 1
     case "2": 2
@@ -60,7 +72,10 @@ extension PlaceNotationParser {
     }
   }
   
-  internal static func representPlace(_ value: UInt8) -> String {
+  /// Converts a place number to its single-character representation, e.g. 12
+  /// to "T", using the same convention as `Bell`.
+  /// - Precondition: `value` must be between 1 and 16, inclusive.
+  public static func representPlace(_ value: UInt8) -> String {
     return switch value {
     case let x where x < 10: "\(x)"
     case 10: "0"
@@ -75,8 +90,9 @@ extension PlaceNotationParser {
   }
   
   /// Given a single change, return a list of places explicitly made.
-  /// (Does not add implicit external places.)
-  internal static func parsePlaces(_ change: String) throws -> [Int] {
+  /// (Does not add implicit external places -- see `inferExternalPlaces`.)
+  /// Throws `.invalidPlaceNotation` if the change contains an invalid character.
+  public static func parsePlaces(_ change: String) throws -> [Int] {
     switch change {
     case "x", "-":
       return []
@@ -88,21 +104,30 @@ extension PlaceNotationParser {
     }
   }
   
-  internal static func inferStage(_ changes: [[Int]]) -> Stage {
+  /// Infers a stage from a set of changes' explicit places, e.g. a change
+  /// containing place 8 implies at least Major. Throws `.invalidPlaceNotation`
+  /// if no stage can be inferred at all, e.g. from an all-cross notation like
+  /// "x" -- that has no place numbers to infer anything from, and needs an
+  /// explicit stage instead (see `getExplicitStage` or `PlaceNotation.init(string:at:)`).
+  public static func inferStage(_ changes: [[Int]]) throws -> Stage {
     let maxPlace = changes
       .compactMap { $0.max() }
       .max() ?? 0
-    precondition(maxPlace > 0 && maxPlace < 16, "Couldn't infer stage for place notation.")
+    guard maxPlace > 0 && maxPlace < 16 else {
+      throw BellMetalError.invalidPlaceNotation
+    }
     let containsCrossChange = changes.contains([])
     let evenMaxPlace = maxPlace.isMultiple(of: 2)
     if containsCrossChange && !evenMaxPlace {
-      
       return Stage(maxPlace + 1)
     }
     return Stage(maxPlace)
   }
   
-  internal static func inferExternalPlaces(_ change: [Int], at stage: Stage) -> [Int] {
+  /// Adds the implicit places a change gets by convention: place 1 if the
+  /// lowest explicit place is even, and the last place if the highest
+  /// explicit place doesn't already share the stage's parity.
+  public static func inferExternalPlaces(_ change: [Int], at stage: Stage) -> [Int] {
     guard change.count > 0 else {
       return switch stage.even {
       case true: []
@@ -122,13 +147,17 @@ extension PlaceNotationParser {
   }
   
 
-  internal static func parseAllPlaces(
+  /// Fully parses a place notation string (expanding palindromes and implicit
+  /// places) into its stage and the explicit places held by each change, in
+  /// order. Pass `stage` if it's known; otherwise it's inferred (see
+  /// `inferStage`) and may throw if it can't be.
+  public static func parseAllPlaces(
     _ pn: String,
     at stage: Stage? = nil
   ) throws -> (Stage, [[Int]]) {
     let changes = try splitAndExpandPalindrome(pn)
       .map(parsePlaces)
-    let knownStage = stage ?? inferStage(changes)
+    let knownStage = try stage ?? inferStage(changes)
     return (knownStage, changes.map { inferExternalPlaces($0, at: knownStage)})
   }
   
@@ -146,18 +175,21 @@ extension PlaceNotationParser {
     return change
   }
   
-  internal static func getExplicitStage(_ pn: String) throws -> (Stage?, String) {
+  /// Parses an explicit stage prefix off the front of a place notation string,
+  /// e.g. "6:12" (Minor) or "T:x1T" (Maximus, using the same single-character
+  /// convention as `Bell`: "1"..."9", then "0", "E", "T", "A", "B", "C", "D"
+  /// for stages 10 through 16). Returns `(nil, pn)` unchanged if there's no
+  /// "stage:" prefix at all.
+  public static func getExplicitStage(_ pn: String) throws -> (Stage?, String) {
     guard pn.contains(":") else { return (nil, pn) }
     let splits = pn.split(separator: ":")
     guard splits.count == 2,
           let stageStr = splits.first,
           let pnStr = splits.last,
           stageStr.count == 1,
-          let stageNum = UInt8(String(stageStr)),
-          stageNum >= 1,
-          let stage = Stage(rawValue: stageNum - 1)
+          let stageCount = interpretPlace(stageStr[stageStr.startIndex])
     else { throw BellMetalError.invalidPlaceNotation }
-    return (stage, String(pnStr))
+    return (Stage(stageCount), String(pnStr))
   }
   
   internal static func parseAllChanges(
