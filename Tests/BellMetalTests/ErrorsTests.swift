@@ -123,12 +123,14 @@ struct ErrorsTests {
     // characters correctly when called directly (see parsePlacesInvalidCharacter).
     // So "1Z3" parses as two separate one-place changes ("1", "3") instead of
     // throwing .invalidPlaceNotation for the unrecognized "Z".
-    let pn = try? PlaceNotation("1Z3")
+    let pnString: String = "1Z3"
+    let pn = try? PlaceNotation(pnString)
     #expect(pn != nil)
   }
 
   @Test func prickStageMismatch() throws {
-    let pn = try PlaceNotation("x4x4,2") // inferred Minimus
+    let pb4String: String = "x4x4,2"
+    let pn = try PlaceNotation(pb4String) // inferred Minimus
     let wrongStageRow: Row = "123456" // Minor
     #expect(throws: BellMetalError.stageMismatch) {
       try pn.prick(at: wrongStageRow)
@@ -136,7 +138,8 @@ struct ErrorsTests {
   }
 
   @Test func placeNotationConcatenateStageMismatch() throws {
-    let minimus = try PlaceNotation("x4x4,2")
+    let pb4String: String = "x4x4,2"
+    let minimus = try PlaceNotation(pb4String)
     let doubles = try PlaceNotation("12", at: .doubles)
     #expect(throws: BellMetalError.stageMismatch) {
       try minimus.concatenate(with: doubles)
