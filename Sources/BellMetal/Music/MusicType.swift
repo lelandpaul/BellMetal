@@ -1,16 +1,29 @@
 import Foundation
 
+/// A category of music that a `Block` of rows can be scored against.
+/// Use `MusicScheme` to combine several types into a weighted overall score.
 public enum MusicType: Sendable {
+  /// 5 and 6 together, in either order, at the front or back of the row.
   case fiveSix
+  /// One of a fixed set of four-bell combinations at the front or back of the row (Major only).
   case cru
+  /// A run of (at least) 4 consecutive bells, ascending or descending, at the front or back.
   case runs
+  /// A run of the given length, ascending or descending, at the front or back.
   case run(length: Int)
+  /// Rounds, Backrounds, Queens, or Tittums split across the seam between two consecutive rows.
   case wrap
+  /// A row matching one of the well-known `NamedRow`s.
   case namedRow
+  /// A row matching one of a stage-specific set of near-miss combinations.
   case namedRowCombo
+  /// The two tenors swapped at backstroke.
   case tenorsReversed
+  /// A well-known combination of the back four bells (Major only).
   case backBellCombo
+  /// A row where every bell is at most one place from its home position.
   case comboNearMiss
+  /// A user-supplied scoring function, identified by `name`.
   case custom(name: String, score: @Sendable (Block) -> Int)
 }
 
@@ -76,6 +89,12 @@ extension MusicType: Codable {
 }
 
 extension MusicType {
+  /// Counts how many times this music type occurs in `rows`.
+  /// - Parameter rows: The block to score.
+  /// - Parameter backstrokeStart: Whether to treat the first row as a
+  /// backstroke, for music types (like `.tenorsReversed`) that only count
+  /// backstroke rows.
+  /// - Returns: The count.
   public func score(_ rows: Block, backstrokeStart: Bool = false) -> Int {
     switch self {
     case .fiveSix:

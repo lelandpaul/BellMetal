@@ -47,12 +47,16 @@ public struct Mask: Sendable {
 }
 
 extension Mask: ExpressibleByStringLiteral {
+  /// Creates a mask from its string representation, e.g. "xxxxxx78".
+  /// - Precondition: the string must be a valid mask -- see `init(string:)`
+  /// for the throwing equivalent, which is safe to use on untrusted input.
   public init(stringLiteral value: StringLiteralType) {
     try! self.init(string: value)
   }
 }
 
 extension Mask: CustomStringConvertible {
+  /// The string representation of this mask, e.g. "xxxxxx78".
   public var description: String {
     (1...stage.count).map { i in
       fixedPos[i]?.description ?? "x"

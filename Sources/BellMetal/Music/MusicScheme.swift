@@ -7,10 +7,13 @@ import Foundation
 public struct MusicScheme: Sendable {
   let scheme: [(type: MusicType, weight: Int)]
   
+  /// Creates a scheme from a list of music types and their weights (positive
+  /// to reward, negative to penalize).
   public init(_ scheme: [(MusicType, weight: Int)]) {
     self.scheme = scheme
   }
-  
+
+  /// The default scheme, mimicking [CompLib](complib.org)'s as closely as possible.
   public static let shared: MusicScheme = .init([
     (type: .fiveSix, weight: 1),
     (type: .cru, weight: 1),
@@ -45,6 +48,8 @@ extension MusicScheme {
     score(Block(rows), backstrokeStart: backstrokeStart)
   }
   
+  /// One music type's contribution to an overall score: its raw occurrence
+  /// count (`score`) already multiplied by its `weight`.
   public typealias ScoreDetail = (type: MusicType, weight: Int, score: Int)
   
   /// Get a breakdown by `MusicType` of the score for a given `Block`.
@@ -77,6 +82,9 @@ extension Block {
   public func musicScore(_ scheme: MusicScheme = .shared, backstrokeStart: Bool = false) -> Int {
     scheme.score(self, backstrokeStart: backstrokeStart)
   }
+  /// Get a breakdown of the music score by `MusicType` on some scheme, defaulting to `.shared`.
+  /// - Parameter scheme: The scheme to score on.
+  /// - Returns: The score breakdown.
   public func musicScoreDetails(_ scheme: MusicScheme = .shared) -> [MusicScheme.ScoreDetail] {
     scheme.scoreDetails(self)
   }

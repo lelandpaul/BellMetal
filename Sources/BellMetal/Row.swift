@@ -3,6 +3,7 @@ import Foundation
 /// A representation of an individual row, i.e. an arbitrary permutation
 /// on some number of bells.
 public struct Row: Equatable, Hashable, Sendable {
+  /// The stage (number of bells) this row belongs to.
   public let stage: Stage
   internal let row: RawRow
   
@@ -15,11 +16,15 @@ public struct Row: Equatable, Hashable, Sendable {
 // MARK: - Literals
 extension Row: ExpressibleByArrayLiteral {
   public typealias ArrayLiteralElement = Bell
-  
+
   public init(arrayLiteral elements: Bell...) {
     self.init(elements)
   }
-  
+
+  /// Creates a row from an array of bells, e.g. `[.b2, .b1, .b3]` is "213".
+  /// - Precondition: the array must be a valid permutation -- see
+  /// `init(validating:)` for the throwing equivalent, which is safe to use
+  /// on untrusted input.
   public init(_ array: [Bell]) {
     do {
       try self.init(validating: array)
@@ -30,6 +35,10 @@ extension Row: ExpressibleByArrayLiteral {
 }
 
 extension Row: ExpressibleByStringLiteral {
+  /// Creates a row from its string representation, e.g. "14235".
+  /// - Precondition: the string must be a valid permutation -- see
+  /// `init(validating:)` for the throwing equivalent, which is safe to use
+  /// on untrusted input.
   public init(stringLiteral value: String) {
     do {
       try self.init(validating: value)
@@ -80,6 +89,7 @@ extension Row {
 }
 
 extension Row: CustomStringConvertible {
+  /// The string representation of this row, e.g. "14235".
   public var description: String {
     var result: [String] = []
     var row = self.row

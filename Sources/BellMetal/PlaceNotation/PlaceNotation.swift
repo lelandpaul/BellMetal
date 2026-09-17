@@ -131,6 +131,8 @@ extension PlaceNotation: CustomStringConvertible {
 }
 
 extension PlaceNotation {
+  /// Applies a place notation's overall transposition (its `leadhead`) to a row.
+  /// - Precondition: `lhs` and `rhs` must share a stage.
   public static func *(lhs: Row, rhs: PlaceNotation) -> Row {
     precondition(lhs.stage == rhs.stage)
     return lhs * rhs.leadhead
@@ -243,6 +245,7 @@ extension PlaceNotation {
 
 // MARK: - Useful facts
 extension PlaceNotation {
+  /// The number of individual changes in this place notation.
   public var count: Int {
     changes.count
   }
