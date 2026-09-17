@@ -64,7 +64,7 @@ extension MusicScheme {
   }
   
   /// Get a breakdown by `MusicType` of the score for a given sequence of Rows.
-  /// - Parameter block: The `Row`s to score.
+  /// - Parameter rows: The `Row`s to score.
   /// - Parameter backstrokeStart: Whether to score the `Row`s as
   /// though the first row is a backstroke.
   /// - Returns: A summary of the score by `MusicType.`
