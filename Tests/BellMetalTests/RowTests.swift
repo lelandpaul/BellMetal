@@ -28,8 +28,53 @@ struct RowTests {
     #expect(b.row == 0xEFCDAB8967452301)
     #expect(b.stage == .sixteen)
   }
-  
+
+  // MARK: Safe construction
+
+  @Test func validatingArrayLiteral() throws {
+    let row = try Row(validating: [.b1, .b4, .b2, .b3, .b5])
+    #expect(row == "14235")
+
+    #expect(throws: BellMetalError.invalidBell) {
+      try Row(validating: [Bell]()) // empty
+    }
+    #expect(throws: BellMetalError.invalidBell) {
+      try Row(validating: [.b1, .b1, .b3]) // duplicate bell, and .b2 missing
+    }
+    #expect(throws: BellMetalError.invalidBell) {
+      try Row(validating: [.b1, .b2, .b4]) // .b4 outside a 3-bell stage
+    }
+  }
+
+  @Test func validatingString() throws {
+    let row = try Row(validating: "14235")
+    #expect(row == "14235")
+
+    #expect(throws: BellMetalError.invalidBell) {
+      try Row(validating: "142Z5") // "Z" isn't a valid bell character
+    }
+    #expect(throws: BellMetalError.invalidBell) {
+      try Row(validating: "11235") // valid characters, but not a permutation
+    }
+  }
+
+  @Test func bellFromCharacter() {
+    #expect(Bell(character: "1") == .b1)
+    #expect(Bell(character: "E") == .bE)
+    #expect(Bell(character: "D") == .bD)
+    #expect(Bell(character: "Z") == nil)
+  }
+
   //MARK: Subscripts
+
+  @Test func bellAtPosition() {
+    let a: Row = "14235"
+    #expect(a.bell(at: 1) == .b1)
+    #expect(a.bell(at: 5) == .b5)
+    #expect(a.bell(at: 0) == nil)
+    #expect(a.bell(at: 6) == nil)
+  }
+
   @Test func retrieveBellAtPostition() async throws {
     let a: Row = "14235"
     #expect(a.row.rawBell(at: 0) == 0x0)

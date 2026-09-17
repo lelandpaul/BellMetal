@@ -21,23 +21,61 @@ extension Row: ExpressibleByArrayLiteral {
   }
   
   public init(_ array: [Bell]) {
+    do {
+      try self.init(validating: array)
+    } catch {
+      fatalError("Invalid Row literal: \(array)")
+    }
+  }
+}
+
+extension Row: ExpressibleByStringLiteral {
+  public init(stringLiteral value: String) {
+    do {
+      try self.init(validating: value)
+    } catch {
+      fatalError("Invalid Row literal: \(value)")
+    }
+  }
+}
+
+// MARK: - Safe construction
+
+extension Row {
+  /// Safe, throwing construction from an array of Bells. Throws `.invalidBell`
+  /// if the array isn't a valid permutation: wrong length (must be 1...16),
+  /// a duplicate bell, or a bell outside the range implied by the array's length.
+  public init(validating array: [Bell]) throws {
+    guard array.count >= 1 && array.count <= 16 else {
+      throw BellMetalError.invalidBell
+    }
     let stage = Stage(array.count)
     guard array.min() == .b1,
           array.max() == stage.tenor,
           Set(array).count == stage.count
-    else { fatalError("Invalid Row literal: \(array)") }
+    else {
+      throw BellMetalError.invalidBell
+    }
     var row = RawRow.zero
     for (i, b) in array.enumerated() {
       row |= RawRow(b.rawValue) << (4 * i)
     }
     self.init(stage: stage, row: row)
   }
-}
 
-extension Row: ExpressibleByStringLiteral {
-  public init(stringLiteral value: String) {
-    let parsed = value.map(Bell.init)
-    self.init(parsed)
+  /// Safe, throwing construction from a string representation, e.g. "1234".
+  /// Throws `.invalidBell` if any character isn't a valid bell, or if the
+  /// resulting bells don't form a valid permutation (see `init(validating:)`
+  /// above). Use this instead of the crashing string-literal initializer when
+  /// the string comes from untrusted input.
+  public init(validating string: String) throws {
+    let bells = try string.map { character -> Bell in
+      guard let bell = Bell(character: character) else {
+        throw BellMetalError.invalidBell
+      }
+      return bell
+    }
+    try self.init(validating: bells)
   }
 }
 
@@ -60,7 +98,7 @@ extension Row {
   
   /// Safely retrieve the bell at a given 1-indexed position;
   /// nil if the position is invalid for the stage.
-  func bell(at pos: Int) -> Bell? {
+  public func bell(at pos: Int) -> Bell? {
     guard pos > 0 && pos <= self.stage.count else { return nil }
     return self[pos]
   }

@@ -31,7 +31,28 @@ extension Bell: CustomStringConvertible {
 extension Bell: ExpressibleByStringLiteral {
   public init(stringLiteral value: String) {
     precondition(value.count == 1, "Invalid Bell literal: \(value)")
-    switch value {
+    guard let bell = Bell(character: value[value.startIndex]) else {
+      fatalError("Invalid Bell literal: \(value)")
+    }
+    self = bell
+  }
+
+  public init(_ character: Character) {
+    self.init(stringLiteral: String(character))
+  }
+
+  public init(_ character: Substring) {
+    self.init(stringLiteral: String(character))
+  }
+}
+
+extension Bell {
+  /// Safe, failable construction from a single-character representation of a bell
+  /// (one of "1"..."9", "0", "E", "T", "A", "B", "C", "D"). Returns nil for any
+  /// other character, rather than trapping like the ExpressibleByStringLiteral
+  /// initializer -- use this when the character comes from untrusted input.
+  public init?(character: Character) {
+    switch character {
     case "1": self = .b1
     case "2": self = .b2
     case "3": self = .b3
@@ -48,16 +69,8 @@ extension Bell: ExpressibleByStringLiteral {
     case "B": self = .bB
     case "C": self = .bC
     case "D": self = .bD
-    default: fatalError("Invalid Bell literal: \(value)")
+    default: return nil
     }
-  }
-  
-  public init(_ character: Character) {
-    self.init(stringLiteral: String(character))
-  }
-  
-  public init(_ character: Substring) {
-    self.init(stringLiteral: String(character))
   }
 }
 
