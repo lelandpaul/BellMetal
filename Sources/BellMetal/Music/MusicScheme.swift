@@ -48,8 +48,32 @@ extension Block {
   public func musicScore(_ scheme: MusicScheme = .shared) -> Int {
     scheme.score(self)
   }
-  
+
   public func musicScoreDetails(_ scheme: MusicScheme = .shared) -> [MusicScheme.ScoreDetail] {
     scheme.scoreDetails(self)
+  }
+}
+
+// MARK: - Codable
+
+extension MusicScheme: Codable {
+  /// Tuples aren't Codable, so `scheme` is encoded/decoded as an array of this
+  /// equivalent struct instead. Encoding (or decoding) fails if any entry's
+  /// MusicType is `.custom`, since that carries a closure -- see MusicType's
+  /// own Codable conformance.
+  private struct Entry: Codable {
+    let type: MusicType
+    let weight: Int
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let entries = try container.decode([Entry].self)
+    self.scheme = entries.map { (type: $0.type, weight: $0.weight) }
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(scheme.map { Entry(type: $0.type, weight: $0.weight) })
   }
 }

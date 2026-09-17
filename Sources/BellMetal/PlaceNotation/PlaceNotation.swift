@@ -2,7 +2,7 @@ import Foundation
 
 
 /// A segment of place notation at some stage.
-public struct PlaceNotation {
+public struct PlaceNotation: Sendable {
   let stage: Stage
   private let changes: [RawRow]
   
@@ -41,6 +41,41 @@ extension PlaceNotation: Hashable {
 extension PlaceNotation: ExpressibleByStringLiteral {
   public init(stringLiteral value: StringLiteralType) {
     try! self.init(string: value)
+  }
+}
+
+// MARK: - Codable
+
+extension PlaceNotation: Codable {
+  private enum CodingKeys: String, CodingKey {
+    case stage
+    case notation
+  }
+
+  /// Encodes/decodes as `{"stage": <bell count>, "notation": "<place notation
+  /// string>"}`, rather than the internal representation. A keyed structure
+  /// (rather than just the notation string) is needed because the stage can't
+  /// always be recovered from the notation alone -- e.g. an all-cross
+  /// notation like "x" carries no place numbers to infer a stage from.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    let stage = try container.decode(Stage.self, forKey: .stage)
+    let notation = try container.decode(String.self, forKey: .notation)
+    do {
+      try self.init(string: notation, at: stage)
+    } catch {
+      throw DecodingError.dataCorruptedError(
+        forKey: .notation,
+        in: container,
+        debugDescription: "Invalid PlaceNotation \"\(notation)\" at stage \(stage)"
+      )
+    }
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(stage, forKey: .stage)
+    try container.encode(description, forKey: .notation)
   }
 }
 
