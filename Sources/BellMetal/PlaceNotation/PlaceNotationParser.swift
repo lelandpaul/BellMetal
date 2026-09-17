@@ -4,8 +4,11 @@ import Foundation
 
 public enum PlaceNotationParser {
   
+  // `\d` only matches 0-9; place characters above bell 10 use E,T,A,B,C,D
+  // (see interpretPlace/representPlace), so they must be included explicitly
+  // or a compound change like "1T" gets split into "1" with the "T" silently lost.
   nonisolated(unsafe)
-  private static let changeRegex: Regex = /(\d+|x|-)/
+  private static let changeRegex: Regex = /([0-9ETABCD]+|x|-)/
   
   /// Given a non-symmetric PN string, extract individual changes.
   internal static func splitToChanges(_ pn: String) -> [String] {

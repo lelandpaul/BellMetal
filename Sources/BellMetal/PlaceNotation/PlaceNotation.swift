@@ -11,14 +11,14 @@ public struct PlaceNotation {
     self.changes = changes
   }
   
-  public init(_ pn: String, at stage: Stage? = nil) throws {
-    let (explicitStage, pn) = try PlaceNotationParser.getExplicitStage(pn)
+  public init(string: String, at stage: Stage? = nil) throws {
+    let (explicitStage, string) = try PlaceNotationParser.getExplicitStage(string)
     if explicitStage != nil,
        stage != nil,
        explicitStage != stage {
       throw BellMetalError.invalidPlaceNotation
     }
-    let (knownStage, changes) = try PlaceNotationParser.parseAllChanges(pn, at: stage ?? explicitStage)
+    let (knownStage, changes) = try PlaceNotationParser.parseAllChanges(string, at: stage ?? explicitStage)
     self.stage = knownStage
     self.changes = changes
   }
@@ -40,7 +40,7 @@ extension PlaceNotation: Hashable {
 
 extension PlaceNotation: ExpressibleByStringLiteral {
   public init(stringLiteral value: StringLiteralType) {
-    try! self.init(value)
+    try! self.init(string: value)
   }
 }
 

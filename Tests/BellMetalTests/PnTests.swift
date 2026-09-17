@@ -71,7 +71,7 @@ struct PlaceNotationTests {
   }
   
   @Test func repeatFalse() async throws {
-    let x = try PlaceNotation("x", at: .minimus)
+    let x = try PlaceNotation(string: "x", at: .minimus)
     let pricked = try x.prick(repeat: .untilFalse)
     #expect(pricked == ["2143", "1234"])
     

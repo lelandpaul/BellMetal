@@ -108,7 +108,7 @@ extension NamedRow {
   }
   
   private func intermediateChange(at stage: Stage) -> PlaceNotation {
-    (stage.even ? try! PlaceNotation("1\(stage.count)") : "1")
+    (stage.even ? try! PlaceNotation(string: "1\(stage.count)") : "1")
   }
   
   private func queens(at stage: Stage) -> Row {

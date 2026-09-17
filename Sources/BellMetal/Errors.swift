@@ -1,6 +1,6 @@
 import Foundation
 
-public enum BellMetalError: Error {
+public enum BellMetalError: Error, Equatable {
   case stageMismatch
   case invalidStage
   case invalidPlaceNotation

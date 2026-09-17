@@ -16,7 +16,7 @@ public struct Mask {
     self.fixedPos = fixedPos
   }
   
-  init(_ string: String) throws {
+  init(string: String) throws {
     self.stage = Stage(string.count)
     var fixedPos: [Int: Bell] = [:]
     for (i, c) in string.enumerated() where c != "x" {
@@ -48,7 +48,7 @@ public struct Mask {
 
 extension Mask: ExpressibleByStringLiteral {
   public init(stringLiteral value: StringLiteralType) {
-    try! self.init(value)
+    try! self.init(string: value)
   }
 }
 
