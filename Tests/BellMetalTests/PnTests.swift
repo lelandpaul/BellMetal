@@ -94,4 +94,48 @@ struct PlaceNotationTests {
     let b: PlaceNotation = "6:14"
     #expect(a + b == "6:12.14")
   }
+
+  @Test func replacingLastChangeWithString() throws {
+    let original: PlaceNotation = "8:x16x16,12"
+    let expected: PlaceNotation = "8:x16x16,14"
+    #expect(try original.replacingLast(with: "14") == expected)
+  }
+
+  @Test func replacingLastChangeWithPlaceNotation() throws {
+    let original: PlaceNotation = "8:x16x16,12"
+    let expected: PlaceNotation = "8:x16x16,14"
+    let replacement: PlaceNotation = "8:14"
+    #expect(try original.replacingLast(with: replacement) == expected)
+  }
+
+  @Test func replacingSingleChangeAtIndex() throws {
+    let original: PlaceNotation = "8:x14x16x18"
+    let expected: PlaceNotation = "8:14.14x16x18"
+    #expect(try original.replacing(at: 0, with: "14") == expected)
+  }
+
+  @Test func replacingRangeWithDifferentLength() throws {
+    let original: PlaceNotation = "8:x14x16x18"
+    let replacement: PlaceNotation = "8:16x16"
+    let expected: PlaceNotation = "8:x16x16.16x18"
+    #expect(try original.replacing(1..<3, with: replacement) == expected)
+  }
+
+  @Test func replacingThrowsOnStageMismatch() {
+    let original: PlaceNotation = "8:x14x16x18"
+    let replacement: PlaceNotation = "6:14"
+    #expect(throws: BellMetalError.stageMismatch) {
+      try original.replacing(at: 0, with: replacement)
+    }
+  }
+
+  @Test func replacingThrowsOnOutOfBoundsIndex() {
+    let original: PlaceNotation = "8:x14x16x18"
+    #expect(throws: BellMetalError.invalidIndex) {
+      try original.replacing(at: original.count, with: "14")
+    }
+    #expect(throws: BellMetalError.invalidIndex) {
+      try original.replacing(at: -1, with: "14")
+    }
+  }
 }
