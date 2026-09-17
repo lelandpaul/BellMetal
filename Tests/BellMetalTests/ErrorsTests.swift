@@ -53,8 +53,15 @@ struct ErrorsTests {
 
   @Test func maskInitInvalidMask() {
     // 'D' (bell 16) isn't valid on a 3-bell stage (inferred from the string's length).
+    //
+    // NOTE: the argument must be a `String` value, not a string literal passed
+    // directly -- `Mask("x1D")` resolves to the ExpressibleByStringLiteral
+    // initializer (which force-tries and crashes on invalid input) rather than
+    // this throwing one, even when written as `try Mask("x1D")`. Binding it to
+    // a named `String` first forces normal overload resolution onto init(_:) throws.
+    let invalidMask: String = "x1D"
     #expect(throws: BellMetalError.invalidMask) {
-      try Mask("x1D")
+      try Mask(invalidMask)
     }
   }
 
