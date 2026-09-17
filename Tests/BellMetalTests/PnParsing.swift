@@ -121,7 +121,6 @@ struct PnParsingTests {
   
   @Test func parsePNWithExplicitStage() throws {
     let lb6: PlaceNotation = "6:x4x4,2"
-    print(lb6)
     #expect(try lb6 == PlaceNotation("x4x4,2", at: .minor))
     
     let invalid: PlaceNotation? = try? PlaceNotation("4:x4x4,2", at: .minor)
