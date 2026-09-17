@@ -17,7 +17,31 @@ struct PnParsingTests {
     let expected = ["-", "12", "34", "-"]
     #expect(PNP.splitToChanges(pn) == expected)
   }
-  
+
+  @Test func splitCompoundChangesWithLetterPlaces() {
+    // Places above bell 10 use E,T,A,B,C,D (see interpretPlace/representPlace).
+    // A compound change mixing digits and letters must stay one token.
+    #expect(PNP.splitToChanges("1E") == ["1E"])
+    #expect(PNP.splitToChanges("90ET") == ["90ET"])
+    // A change consisting solely of a letter must not be dropped entirely.
+    #expect(PNP.splitToChanges("E") == ["E"])
+    #expect(PNP.splitToChanges("x1E.T4x") == ["x", "1E", "T4", "x"])
+  }
+
+  @Test func parsePlacesWithLetters() throws {
+    #expect(try PNP.parsePlaces("1E") == [1, 11])
+    #expect(try PNP.parsePlaces("90ET") == [9, 10, 11, 12])
+  }
+
+  @Test func placeNotationRoundTripWithLetterPlaces() throws {
+    // Places 2, 11 (E), and 12 (T) made explicit on Maximus; inference adds
+    // place 1 (since place 2 is even) leaving {1,2,11,12} made overall.
+    // Before the tokenizer recognized letter places, "2E" parsed as "2" alone,
+    // silently losing the made place at 11 and 12 and producing the wrong row.
+    let pn = try PlaceNotation("2E", at: .maximus)
+    #expect(pn.leadhead == "1243658709ET")
+  }
+
   @Test func palindromeHelper() {
     #expect([1,2,3].makePalindrome() == [1,2,3,2,1])
     #expect([1].makePalindrome() == [1])
