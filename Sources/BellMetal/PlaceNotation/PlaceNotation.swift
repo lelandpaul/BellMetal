@@ -276,6 +276,52 @@ extension PlaceNotation {
   }
 }
 
+// MARK: - Segment replacement
+extension PlaceNotation {
+  /// Replaces the changes in `range` with the changes from `replacement`.
+  /// - Throws: `BellMetalError.stageMismatch` if `replacement`'s stage differs
+  ///   from this place notation's stage. `BellMetalError.invalidIndex` if
+  ///   `range` isn't within `0..<count` (inclusive of `count` as an upper bound).
+  public func replacing(_ range: Range<Int>, with replacement: PlaceNotation) throws -> PlaceNotation {
+    guard stage == replacement.stage else { throw BellMetalError.stageMismatch }
+    guard range.lowerBound >= 0, range.upperBound <= count else {
+      throw BellMetalError.invalidIndex
+    }
+    var newChanges = changes
+    newChanges.replaceSubrange(range, with: replacement.changes)
+    return PlaceNotation(stage: stage, changes: newChanges)
+  }
+
+  /// Replaces the changes in `range` with the changes parsed from
+  /// `replacement`, interpreted at this place notation's stage.
+  public func replacing(_ range: Range<Int>, with replacement: String) throws -> PlaceNotation {
+    try replacing(range, with: PlaceNotation(string: replacement, at: stage))
+  }
+
+  /// Replaces the single change at `index` with `replacement`.
+  public func replacing(at index: Int, with replacement: PlaceNotation) throws -> PlaceNotation {
+    try replacing(index..<(index + 1), with: replacement)
+  }
+
+  /// Replaces the single change at `index` with the change(s) parsed from
+  /// `replacement`, interpreted at this place notation's stage.
+  public func replacing(at index: Int, with replacement: String) throws -> PlaceNotation {
+    try replacing(index..<(index + 1), with: replacement)
+  }
+
+  /// Replaces the last change with `replacement`. The common case: e.g.
+  /// `"x16x16,12"` -> `replacingLast(with: "14")` -> `"x16x16,14"`.
+  public func replacingLast(with replacement: PlaceNotation) throws -> PlaceNotation {
+    try replacing(at: count - 1, with: replacement)
+  }
+
+  /// Replaces the last change with the change(s) parsed from `replacement`,
+  /// interpreted at this place notation's stage.
+  public func replacingLast(with replacement: String) throws -> PlaceNotation {
+    try replacing(at: count - 1, with: replacement)
+  }
+}
+
 // MARK: - Lines
 extension PlaceNotation {
   

@@ -19,6 +19,9 @@ public enum BellMetalError: Error, Equatable {
   /// Reserved for scoring rows of inconsistent stages; not currently thrown
   /// anywhere, since `MusicType`/`MusicScheme` operate on a single `Block`.
   case inconsistentStageForMusic
+  /// An index or range used to address into a `PlaceNotation`'s changes was
+  /// out of bounds.
+  case invalidIndex
 }
 
 extension BellMetalError: CustomStringConvertible {
@@ -36,6 +39,8 @@ extension BellMetalError: CustomStringConvertible {
       "Invalid bell."
     case .inconsistentStageForMusic:
       "Music can only be assessed if the rows are of the same stage."
+    case .invalidIndex:
+      "Invalid index."
     }
   }
 }
