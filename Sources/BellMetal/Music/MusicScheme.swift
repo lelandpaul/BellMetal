@@ -77,24 +77,8 @@ extension Block {
   public func musicScore(_ scheme: MusicScheme = .shared, backstrokeStart: Bool = false) -> Int {
     scheme.score(self, backstrokeStart: backstrokeStart)
   }
-<<<<<<< HEAD
-  
-  /// Get a breakdown of the music score by `MusicType` on some scheme, defaulting to `.shared`.
-  /// - Parameter scheme: The scheme to score on.
-  /// - Parameter backstrokeStart: Whether to score the `Row`s as
-  /// though the first row is a backstroke.
-  /// - Returns: The score breakdown.
-  public func musicScoreDetails(_ scheme: MusicScheme = .shared, backstrokeStart: Bool = false) -> [MusicScheme.ScoreDetail] {
-    scheme.scoreDetails(self, backstrokeStart: backstrokeStart)
-||||||| dee21d1
-  
   public func musicScoreDetails(_ scheme: MusicScheme = .shared) -> [MusicScheme.ScoreDetail] {
     scheme.scoreDetails(self)
-=======
-
-  public func musicScoreDetails(_ scheme: MusicScheme = .shared) -> [MusicScheme.ScoreDetail] {
-    scheme.scoreDetails(self)
->>>>>>> develop
   }
 }
 
