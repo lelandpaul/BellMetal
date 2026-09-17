@@ -108,6 +108,13 @@ struct ErrorsTests {
     }
   }
 
+  @Test func placeNotationCannotInferStageFromBareCross() {
+    // "x" alone carries no place numbers to infer a stage from, and none is given.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PlaceNotation(string: "x")
+    }
+  }
+
   @Test func placeNotationSilentlyDropsUnrecognizedCharacters() {
     // NOTE: this documents a real gap, not desired behavior. The top-level tokenizer
     // (PlaceNotationParser.changeRegex) only ever extracts digit runs, "x", or "-";
@@ -150,10 +157,10 @@ struct ErrorsTests {
       try PNP.getExplicitStage("12:34") // stage prefix must be a single character
     }
     #expect(throws: BellMetalError.invalidPlaceNotation) {
-      try PNP.getExplicitStage("0:34") // stage number must be >= 1
+      try PNP.getExplicitStage("x:34") // "x" isn't a place character, even though it's used in PN content
     }
     #expect(throws: BellMetalError.invalidPlaceNotation) {
-      try PNP.getExplicitStage("A:34") // stage prefix must be numeric
+      try PNP.getExplicitStage("Z:34") // not a recognized place character at all
     }
     #expect(throws: BellMetalError.invalidPlaceNotation) {
       try PNP.getExplicitStage("1:2:34") // only one colon is allowed

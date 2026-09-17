@@ -61,13 +61,20 @@ struct PnParsingTests {
     #expect(PNP.splitAndExpandPalindrome(test) == expected_test)
   }
   
-  @Test func inferStage() {
+  @Test func inferStage() throws {
     let doubles = [[5],[1],[5],[1],[5]]
-    #expect(PNP.inferStage(doubles) == .doubles)
+    #expect(try PNP.inferStage(doubles) == .doubles)
     let minor = [[1,2],[3,4],[5,6],[1,2]]
-    #expect(PNP.inferStage(minor) == .minor)
+    #expect(try PNP.inferStage(minor) == .minor)
     let withCrossChange = [[],[5]]
-    #expect(PNP.inferStage(withCrossChange) == .minor)
+    #expect(try PNP.inferStage(withCrossChange) == .minor)
+  }
+
+  @Test func inferStageThrowsWhenNoPlacesGiven() {
+    // An all-cross set of changes carries no place numbers to infer from.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.inferStage([[], []])
+    }
   }
   
   @Test func inferExternalPlaces() {
@@ -125,6 +132,28 @@ struct PnParsingTests {
 
     let invalid: PlaceNotation? = try? PlaceNotation(string: "4:x4x4,2", at: .minor)
     #expect(invalid == nil)
+  }
+
+  @Test func explicitStageSupportsFullBellRange() throws {
+    // The stage prefix uses the same one-character-per-bell convention as
+    // Bell, so it can express any stage, not just 1 through 9.
+    let royal: PlaceNotation = "0:34" // "0" = 10 (Royal)
+    #expect(try royal == PlaceNotation(string: "34", at: .royal))
+
+    let maximus: PlaceNotation = "T:x1T" // "T" = 12 (Maximus)
+    #expect(try maximus == PlaceNotation(string: "x1T", at: .maximus))
+
+    let sixteen: PlaceNotation = "D:x1D" // "D" = 16 (Sixteen)
+    #expect(try sixteen == PlaceNotation(string: "x1D", at: .sixteen))
+  }
+
+  @Test func getExplicitStageSupportsFullBellRange() throws {
+    #expect(try PNP.getExplicitStage("6:12").0 == .minor)
+    #expect(try PNP.getExplicitStage("0:34").0 == .royal)
+    #expect(try PNP.getExplicitStage("E:34").0 == .cinques)
+    #expect(try PNP.getExplicitStage("T:x1T").0 == .maximus)
+    #expect(try PNP.getExplicitStage("D:x1D").0 == .sixteen)
+    #expect(try PNP.getExplicitStage("no-prefix-here").0 == nil)
   }
 }
 

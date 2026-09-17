@@ -77,12 +77,11 @@ can't be inferred and must be given explicitly, either as the `at:` parameter:
 try PlaceNotation(string: "x", at: .minimus)
 ```
 
-or as a `"N:"` prefix on the string itself:
+or as a single-character prefix on the string itself, using the same
+character-per-bell convention as ``Bell`` -- `"1"`-`"9"`, then `"0"`, `"E"`,
+`"T"`, `"A"`, `"B"`, `"C"`, `"D"` for stages 10 through 16:
 
 ```swift
-let lb6: PlaceNotation = "6:x4x4,2"  // Minor (6 bells)
+let lb6: PlaceNotation = "6:x4x4,2"   // Minor (6 bells)
+let maximus: PlaceNotation = "T:x1T"  // Maximus (12 bells)
 ```
-
-The prefix form only supports a single digit, so it can express stages 1
-through 9 (Singles through Caters) but not Royal and above -- use the `at:`
-parameter for those.

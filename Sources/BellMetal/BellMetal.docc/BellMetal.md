@@ -62,6 +62,7 @@ plainCourse.musicScore() // an Int
 ### Place Notation
 
 - ``PlaceNotation``
+- ``PlaceNotationParser``
 - <doc:PlaceNotationSyntax>
 
 ### Pattern Matching
