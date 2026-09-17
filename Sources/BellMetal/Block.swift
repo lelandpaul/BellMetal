@@ -3,8 +3,8 @@ import Foundation
 /// An ordered sequence of rows. Differs from [Row] in
 /// enforcing a consistent stage and in keeping a Set
 /// for quick truth-checking.
-struct Block {
-  let stage: Stage
+public struct Block: Sendable {
+  public let stage: Stage
   internal let rows: [RawRow]
   internal let rowSet: Set<RawRow>
   
@@ -28,21 +28,21 @@ struct Block {
 }
 
 extension Block: ExpressibleByArrayLiteral {
-  typealias ArrayLiteralElement = Row
-  init(arrayLiteral elements: ArrayLiteralElement...) {
+  public typealias ArrayLiteralElement = Row
+  public init(arrayLiteral elements: ArrayLiteralElement...) {
     self.init(elements)
   }
 }
 
 extension Block: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     let rows = self.rows.map { Row(stage: self.stage, row: $0) }
     return "Block(\(rows)"
   }
 }
 
 extension Block: Sequence {
-  func makeIterator() -> Array<Row>.Iterator {
+  public func makeIterator() -> Array<Row>.Iterator {
     return self.rows.lazy.map({ Row(stage: self.stage, row: $0) }).makeIterator()
   }
 }
@@ -60,6 +60,29 @@ extension Block: Hashable {
   }
 }
 
+// MARK: - Codable
+
+extension Block: Codable {
+  /// Encodes/decodes as a plain array of Rows, not the internal
+  /// bit-packed storage (or the redundant rowSet cache).
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let rows = try container.decode([Row].self)
+    guard !rows.isEmpty else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Block cannot be empty")
+    }
+    guard Set(rows.map(\.stage)).count == 1 else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Block rows have inconsistent stages")
+    }
+    self.init(rows)
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(Array(self))
+  }
+}
+
 extension Block {
   public subscript(_ index: Int) -> Row {
     Row(stage: self.stage, row: self.rows[index])
@@ -73,8 +96,8 @@ extension Block {
   public var first: Row {
     Row.init(stage: stage, row: rows.first!) // Safe: Not possible to construct empty Block
   }
-  public var last: Row? {
-    Row.init(stage: stage, row: rows.last!) // Safe: Not possible to construct tempty Block
+  public var last: Row {
+    Row.init(stage: stage, row: rows.last!) // Safe: Not possible to construct empty Block
   }
   
   /// Separates the rows into two blocks by stroke parity.

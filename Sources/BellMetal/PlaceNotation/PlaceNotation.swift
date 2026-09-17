@@ -2,7 +2,7 @@ import Foundation
 
 
 /// A segment of place notation at some stage.
-struct PlaceNotation {
+public struct PlaceNotation: Sendable {
   let stage: Stage
   private let changes: [RawRow]
   
@@ -11,36 +11,71 @@ struct PlaceNotation {
     self.changes = changes
   }
   
-  public init(_ pn: String, at stage: Stage? = nil) throws {
-    let (explicitStage, pn) = try PlaceNotationParser.getExplicitStage(pn)
+  public init(string: String, at stage: Stage? = nil) throws {
+    let (explicitStage, string) = try PlaceNotationParser.getExplicitStage(string)
     if explicitStage != nil,
        stage != nil,
        explicitStage != stage {
       throw BellMetalError.invalidPlaceNotation
     }
-    let (knownStage, changes) = try PlaceNotationParser.parseAllChanges(pn, at: stage ?? explicitStage)
+    let (knownStage, changes) = try PlaceNotationParser.parseAllChanges(string, at: stage ?? explicitStage)
     self.stage = knownStage
     self.changes = changes
   }
 }
 
 extension PlaceNotation: Equatable {
-  static func == (lhs: PlaceNotation, rhs: PlaceNotation) -> Bool {
+  public static func == (lhs: PlaceNotation, rhs: PlaceNotation) -> Bool {
     return lhs.stage == rhs.stage
     && lhs.changes == rhs.changes
   }
 }
 
 extension PlaceNotation: Hashable {
-  func hash(into hasher: inout Hasher) {
+  public func hash(into hasher: inout Hasher) {
     hasher.combine(stage)
     hasher.combine(changes)
   }
 }
 
 extension PlaceNotation: ExpressibleByStringLiteral {
-  init(stringLiteral value: StringLiteralType) {
-    try! self.init(value)
+  public init(stringLiteral value: StringLiteralType) {
+    try! self.init(string: value)
+  }
+}
+
+// MARK: - Codable
+
+extension PlaceNotation: Codable {
+  private enum CodingKeys: String, CodingKey {
+    case stage
+    case notation
+  }
+
+  /// Encodes/decodes as `{"stage": <bell count>, "notation": "<place notation
+  /// string>"}`, rather than the internal representation. A keyed structure
+  /// (rather than just the notation string) is needed because the stage can't
+  /// always be recovered from the notation alone -- e.g. an all-cross
+  /// notation like "x" carries no place numbers to infer a stage from.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    let stage = try container.decode(Stage.self, forKey: .stage)
+    let notation = try container.decode(String.self, forKey: .notation)
+    do {
+      try self.init(string: notation, at: stage)
+    } catch {
+      throw DecodingError.dataCorruptedError(
+        forKey: .notation,
+        in: container,
+        debugDescription: "Invalid PlaceNotation \"\(notation)\" at stage \(stage)"
+      )
+    }
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(stage, forKey: .stage)
+    try container.encode(description, forKey: .notation)
   }
 }
 
@@ -87,7 +122,7 @@ extension PlaceNotation: CustomStringConvertible {
     return complete.joined()
   }
   
-  var description: String {
+  public var description: String {
     if let (a,b) = self.findPalindromicSplit() {
       return PlaceNotation.changesToString(a) + "," + PlaceNotation.changesToString(b)
     }
@@ -105,7 +140,7 @@ extension PlaceNotation {
 extension PlaceNotation {
   /// When pricking a block, used to determine which of the starting and ending
   /// rows to keep in the result.
-  enum LeadheadMode {
+  public enum LeadheadMode {
     case keepFinal, keepInitial, keepBoth, keepNeither
   }
   
@@ -120,7 +155,7 @@ extension PlaceNotation {
   /// with a LeadheadMode that drops the final row, the bell in question may
   /// not be in the specified position at the end of the returned Block, but
   /// would reach that position if one more change were made.)
-  enum RepeatCondition {
+  public enum RepeatCondition {
     case times(UInt)
     case untilRound
     case untilFalse
@@ -208,15 +243,15 @@ extension PlaceNotation {
 
 // MARK: - Useful facts
 extension PlaceNotation {
-  var count: Int {
+  public var count: Int {
     changes.count
   }
   
   /// The total transposition reached by this place notation.
-  var leadhead: Row {
+  public var leadhead: Row {
     Row(
       stage: stage,
-      row: changes.reduce(into: stage.rounds.row) { $0 = $0 * $1 }
+      row: changes.reduce(into: stage.rounds.row) { $0 = $0.composePermutation($1, rawStage: stage.rawValue) }
     )
   }
 }
@@ -238,3 +273,18 @@ extension PlaceNotation {
   }
 }
 
+// MARK: - Lines
+extension PlaceNotation {
+  
+  /// Generate the blueline for a given place bell, extending for some number of leads.
+  /// - Parameters:
+  ///   - bell: The bell to generate the line for.
+  ///   - leads: How many repetitions of the place notation block to continue the line through.
+  /// - Returns: A sequence of integers between 1 and stage.n (inclusive) representing the
+  /// position of the bell in each row. Includes both the first and last rows.
+  public func line(for bell: Bell, leads: UInt = 1) -> [Int] {
+    guard self.stage.includes(bell) else { return [] }
+    return (try? prick(keeping: .keepBoth, repeat: .times(leads)))?
+      .map { $0[bell] } ?? []
+  }
+}

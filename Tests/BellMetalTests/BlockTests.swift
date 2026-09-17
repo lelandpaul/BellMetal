@@ -16,8 +16,12 @@ struct BlockTests {
     #expect(block.uniqueCount == 3)
     #expect(block.first == "1234")
     #expect(block.last == "2413")
+    // `last`, like `first`, is never nil -- a Block can't be empty.
+    // The `: Row` annotation makes that a compile-time check, not just a runtime one.
+    let last: Row = block.last
+    #expect(last == "2413")
   }
-  
+
   @Test func instantiateFromArrayLiteral() {
     let block: Block = [
       "1234",
@@ -119,7 +123,7 @@ struct BlockTests {
       "1423"
     ]
     
-    let pb4_second_lead: Block = try pb4_first_lead.transpose(by: pb4_first_lead.last!)
+    let pb4_second_lead: Block = try pb4_first_lead.transpose(by: pb4_first_lead.last)
     
     #expect(pb4_second_lead == pb4_expected_second_lead)
   }

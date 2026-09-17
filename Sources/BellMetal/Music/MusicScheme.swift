@@ -4,14 +4,14 @@ import Foundation
 /// The default, `.shared`, mimics [CompLib](complib.org)'s
 /// default music scheme as far as possible. `\Block.musicScore`
 /// uses `.shared` by default.
-struct MusicScheme: Sendable {
+public struct MusicScheme: Sendable {
   let scheme: [(type: MusicType, weight: Int)]
   
   public init(_ scheme: [(MusicType, weight: Int)]) {
     self.scheme = scheme
   }
   
-  static let shared: MusicScheme = .init([
+  public static let shared: MusicScheme = .init([
     (type: .fiveSix, weight: 1),
     (type: .cru, weight: 1),
     (type: .runs, weight: 1),
@@ -45,7 +45,7 @@ extension MusicScheme {
     score(Block(rows), backstrokeStart: backstrokeStart)
   }
   
-  typealias ScoreDetail = (type: MusicType, weight: Int, score: Int)
+  public typealias ScoreDetail = (type: MusicType, weight: Int, score: Int)
   
   /// Get a breakdown by `MusicType` of the score for a given `Block`.
   /// - Parameter block: The `Block` to score.
@@ -77,6 +77,7 @@ extension Block {
   public func musicScore(_ scheme: MusicScheme = .shared, backstrokeStart: Bool = false) -> Int {
     scheme.score(self, backstrokeStart: backstrokeStart)
   }
+<<<<<<< HEAD
   
   /// Get a breakdown of the music score by `MusicType` on some scheme, defaulting to `.shared`.
   /// - Parameter scheme: The scheme to score on.
@@ -85,5 +86,38 @@ extension Block {
   /// - Returns: The score breakdown.
   public func musicScoreDetails(_ scheme: MusicScheme = .shared, backstrokeStart: Bool = false) -> [MusicScheme.ScoreDetail] {
     scheme.scoreDetails(self, backstrokeStart: backstrokeStart)
+||||||| dee21d1
+  
+  public func musicScoreDetails(_ scheme: MusicScheme = .shared) -> [MusicScheme.ScoreDetail] {
+    scheme.scoreDetails(self)
+=======
+
+  public func musicScoreDetails(_ scheme: MusicScheme = .shared) -> [MusicScheme.ScoreDetail] {
+    scheme.scoreDetails(self)
+>>>>>>> develop
+  }
+}
+
+// MARK: - Codable
+
+extension MusicScheme: Codable {
+  /// Tuples aren't Codable, so `scheme` is encoded/decoded as an array of this
+  /// equivalent struct instead. Encoding (or decoding) fails if any entry's
+  /// MusicType is `.custom`, since that carries a closure -- see MusicType's
+  /// own Codable conformance.
+  private struct Entry: Codable {
+    let type: MusicType
+    let weight: Int
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let entries = try container.decode([Entry].self)
+    self.scheme = entries.map { (type: $0.type, weight: $0.weight) }
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(scheme.map { Entry(type: $0.type, weight: $0.weight) })
   }
 }

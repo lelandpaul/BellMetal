@@ -1,7 +1,7 @@
 import Foundation
 
 /// An enum representing available stages.
-public enum Stage: UInt8 {
+public enum Stage: UInt8, Sendable {
   case one = 0x0
   case two = 0x1
   case singles = 0x2
@@ -41,7 +41,8 @@ extension Stage {
   }
   
   public var tenorPair: (Bell, Bell) {
-    (Bell(rawValue: rawValue - 1)!, Bell(rawValue: rawValue)!)
+    precondition(self > .one, "tenorPair requires at least two bells: \(self)")
+    return (Bell(rawValue: rawValue - 1)!, Bell(rawValue: rawValue)!)
   }
   
   public func includes(_ bell: Bell) -> Bool {
@@ -95,5 +96,51 @@ extension Stage {
 extension Stage: Comparable {
   public static func < (lhs: Stage, rhs: Stage) -> Bool {
     lhs.rawValue < rhs.rawValue
+  }
+}
+
+// MARK: - Codable
+
+extension Stage: Codable {
+  /// Encodes/decodes as the bell count (e.g. 8 for Major), not the raw
+  /// (0-indexed) enum value, since the count is the meaningful, stable
+  /// external representation.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let count = try container.decode(Int.self)
+    guard count >= 1 && count <= 16 else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid Stage bell count: \(count)")
+    }
+    self.init(count)
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(count)
+  }
+}
+
+// MARK: - CustomStringConvertible
+
+extension Stage: CustomStringConvertible {
+  public var description: String {
+    switch self {
+    case .one: "One"
+    case .two: "Two"
+    case .singles: "Singles"
+    case .minimus: "Minimus"
+    case .doubles: "Doubles"
+    case .minor: "Minor"
+    case .triples: "Triples"
+    case .major: "Major"
+    case .caters: "Caters"
+    case .royal: "Royal"
+    case .cinques: "Cinques"
+    case .maximus: "Maximus"
+    case .thirteen: "Thirteen"
+    case .fourteen: "Fourteen"
+    case .fifteen: "Fifteen"
+    case .sixteen: "Sixteen"
+    }
   }
 }

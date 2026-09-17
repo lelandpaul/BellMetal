@@ -1,6 +1,6 @@
 import Foundation
 
-enum MusicType: Sendable {
+public enum MusicType: Sendable {
   case fiveSix
   case cru
   case runs
@@ -12,6 +12,67 @@ enum MusicType: Sendable {
   case backBellCombo
   case comboNearMiss
   case custom(name: String, score: @Sendable (Block) -> Int)
+}
+
+// MARK: - Codable
+
+extension MusicType: Codable {
+  private enum CodingKeys: String, CodingKey {
+    case kind
+    case length
+  }
+
+  /// Every case round-trips except `.custom`, which carries a closure and so
+  /// can never be encoded or decoded -- encoding throws `EncodingError`, and
+  /// decoding a `.custom`-tagged payload throws `DecodingError`.
+  private enum Kind: String, Codable {
+    case fiveSix, cru, runs, run, wrap, namedRow, namedRowCombo, tenorsReversed, backBellCombo, comboNearMiss, custom
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    switch try container.decode(Kind.self, forKey: .kind) {
+    case .fiveSix: self = .fiveSix
+    case .cru: self = .cru
+    case .runs: self = .runs
+    case .run: self = .run(length: try container.decode(Int.self, forKey: .length))
+    case .wrap: self = .wrap
+    case .namedRow: self = .namedRow
+    case .namedRowCombo: self = .namedRowCombo
+    case .tenorsReversed: self = .tenorsReversed
+    case .backBellCombo: self = .backBellCombo
+    case .comboNearMiss: self = .comboNearMiss
+    case .custom:
+      throw DecodingError.dataCorruptedError(
+        forKey: .kind,
+        in: container,
+        debugDescription: "MusicType.custom cannot be decoded -- it carries a closure"
+      )
+    }
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    switch self {
+    case .fiveSix: try container.encode(Kind.fiveSix, forKey: .kind)
+    case .cru: try container.encode(Kind.cru, forKey: .kind)
+    case .runs: try container.encode(Kind.runs, forKey: .kind)
+    case .run(let length):
+      try container.encode(Kind.run, forKey: .kind)
+      try container.encode(length, forKey: .length)
+    case .wrap: try container.encode(Kind.wrap, forKey: .kind)
+    case .namedRow: try container.encode(Kind.namedRow, forKey: .kind)
+    case .namedRowCombo: try container.encode(Kind.namedRowCombo, forKey: .kind)
+    case .tenorsReversed: try container.encode(Kind.tenorsReversed, forKey: .kind)
+    case .backBellCombo: try container.encode(Kind.backBellCombo, forKey: .kind)
+    case .comboNearMiss: try container.encode(Kind.comboNearMiss, forKey: .kind)
+    case .custom(let name, _):
+      throw EncodingError.invalidValue(self, EncodingError.Context(
+        codingPath: encoder.codingPath,
+        debugDescription: "MusicType.custom(\"\(name)\") cannot be encoded -- it carries a closure"
+      ))
+    }
+  }
 }
 
 extension MusicType {
@@ -48,14 +109,14 @@ extension MusicType {
     guard rows.stage > .minor else { return 0 }
     let front = "xxxx"
     let back = (7...rows.stage.count)
-      .compactMap { Bell(rawValue: UInt8($0))?.description }
+      .compactMap { Bell(rawValue: UInt8($0 - 1))?.description }
       .joined()
     let masks = [
       front + "56" + back,
       front + "65" + back,
       "56" + back + front,
       "65" + back + front
-    ].compactMap { try? Mask($0) }
+    ].compactMap { try? Mask(string: $0) }
     return (try? rows.count(matchingAny: masks)) ?? 0
   }
   
@@ -69,15 +130,15 @@ extension MusicType {
     let runSegments = (1...rows.stage.count - length+1)
       .map {
         ($0...($0+length-1))
-          .compactMap { Bell(rawValue: UInt8($0))?.description }
+          .compactMap { Bell(rawValue: UInt8($0 - 1))?.description }
           .joined()
       }
     var masks: [Mask] = []
     runSegments.forEach { seg in
-      if let m = try? Mask(seg + empty) { masks.append(m) }
-      if let m = try? Mask(seg.reversed() + empty) { masks.append(m) }
-      if let m = try? Mask(empty + seg) { masks.append(m) }
-      if let m = try? Mask(empty + seg.reversed()) { masks.append(m) }
+      if let m = try? Mask(string: seg + empty) { masks.append(m) }
+      if let m = try? Mask(string: seg.reversed() + empty) { masks.append(m) }
+      if let m = try? Mask(string: empty + seg) { masks.append(m) }
+      if let m = try? Mask(string: empty + seg.reversed()) { masks.append(m) }
     }
     return (try? rows.count(matchingAny: masks)) ?? 0
   }
@@ -115,8 +176,8 @@ extension MusicType {
       let suffix = Array(repeating: "x", count: row.stage.count - i).joined()
       let rowA = row.prefix(row.stage.count - i).map({ $0.description }).joined()
       let rowB = row.suffix(i).map({ $0.description }).joined()
-      guard let maskA = try? Mask(prefix+rowA),
-            let maskB = try? Mask(rowB+suffix) else {
+      guard let maskA = try? Mask(string: prefix+rowA),
+            let maskB = try? Mask(string: rowB+suffix) else {
         return nil
       }
       return (maskA, maskB)
@@ -162,9 +223,10 @@ extension MusicType {
     _ rows: Block,
     backstrokeStart: Bool = false
   ) -> Int {
+    guard rows.stage > .one else { return 0 }
     let (nearTenor, tenor) = rows.stage.tenorPair
     let mask = try? Mask(
-      Array(repeating: "x", count: rows.stage.count - 2).joined() +
+      string: Array(repeating: "x", count: rows.stage.count - 2).joined() +
       tenor.description + nearTenor.description
     )
     guard let mask else { return 0 }
@@ -211,7 +273,7 @@ extension MusicType {
 
 
 extension MusicType: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     switch self {
     case .fiveSix:
       "56s"
@@ -233,7 +295,7 @@ extension MusicType: CustomStringConvertible {
       "Back Bell Combinations"
     case .comboNearMiss:
       "Combination Near Misses"
-    case .custom(name: let name, score: let score):
+    case .custom(name: let name, score: _):
       name
     }
     

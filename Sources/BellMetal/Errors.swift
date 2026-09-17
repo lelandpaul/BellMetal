@@ -1,15 +1,16 @@
 import Foundation
 
-enum BellMetalError: Error {
+public enum BellMetalError: Error, Equatable {
   case stageMismatch
   case invalidStage
   case invalidPlaceNotation
   case invalidMask
+  case invalidBell
   case inconsistentStageForMusic
 }
 
 extension BellMetalError: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     switch self {
     case .stageMismatch:
       "Stages don't match."
@@ -19,6 +20,8 @@ extension BellMetalError: CustomStringConvertible {
       "Invalid place notation."
     case .invalidMask:
       "Invalid mask."
+    case .invalidBell:
+      "Invalid bell."
     case .inconsistentStageForMusic:
       "Music can only be assessed if the rows are of the same stage."
     }

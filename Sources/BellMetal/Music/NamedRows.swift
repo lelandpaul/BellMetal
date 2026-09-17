@@ -1,6 +1,6 @@
 import Foundation
 
-public enum NamedRow: Equatable, Hashable, CaseIterable {
+public enum NamedRow: Equatable, Hashable, CaseIterable, Sendable {
   case backrounds
   case explodedtittums
   case hagdyke
@@ -17,6 +17,28 @@ public enum NamedRow: Equatable, Hashable, CaseIterable {
   case rollercoaster
   case seesaw
   case sawsee
+}
+
+// MARK: - Codable
+
+extension NamedRow: Codable {
+  /// Encodes/decodes as the case name (e.g. "backrounds"), spelled out
+  /// explicitly here rather than relying on synthesis, since a plain
+  /// no-associated-values enum's default synthesized representation isn't
+  /// guaranteed to be this simple string form.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let name = try container.decode(String.self)
+    guard let namedRow = NamedRow.allCases.first(where: { "\($0)" == name }) else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid NamedRow: \(name)")
+    }
+    self = namedRow
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode("\(self)")
+  }
 }
 
 extension NamedRow {
@@ -108,7 +130,7 @@ extension NamedRow {
   }
   
   private func intermediateChange(at stage: Stage) -> PlaceNotation {
-    (stage.even ? try! PlaceNotation("1\(stage.count)") : "1")
+    (stage.even ? try! PlaceNotation(string: "1\(stage.count)") : "1")
   }
   
   private func queens(at stage: Stage) -> Row {
