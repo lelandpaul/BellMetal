@@ -175,7 +175,7 @@ extension Row {
   /// Builds a Row from 1-indexed bell numbers (e.g. `Row([1,2,3])` is rounds on singles),
   /// matching the convention used by Bell's string/character initializers.
   init(_ row: [Int]) {
-    self.init(row.map { Bell(rawValue: UInt8($0 - 1)) ?? .b1 }) // Will fail if an invalid bell is included
+    self.init(row.map { Bell(rawValue: UInt8($0 - 1)) ?? fatalError("Invalid bell number: \($0)") })
   }
 }
 

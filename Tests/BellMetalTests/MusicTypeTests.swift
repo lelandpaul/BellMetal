@@ -87,6 +87,11 @@ struct MusicTypeTests {
     #expect(MusicType.scoreTenorsReversed(handOnly, backstrokeStart: true) == 1)
   }
 
+  @Test func tenorsReversedOnDegenerateStage() {
+    // Stage .one has no tenor pair (and no room for a 2-bell mask); must not crash.
+    #expect(MusicType.scoreTenorsReversed(Block("1")) == 0)
+  }
+
   @Test func backBellCombo() {
     let block: Block = ["12345678", "56781234", "12345687"]
     #expect(MusicType.scoreBackBellCombo(block) == 2) // first two rows match; the third doesn't
