@@ -73,8 +73,8 @@ extension Block {
   public var first: Row {
     Row.init(stage: stage, row: rows.first!) // Safe: Not possible to construct empty Block
   }
-  public var last: Row? {
-    Row.init(stage: stage, row: rows.last!) // Safe: Not possible to construct tempty Block
+  public var last: Row {
+    Row.init(stage: stage, row: rows.last!) // Safe: Not possible to construct empty Block
   }
   
   /// Separates the rows into two blocks by stroke parity.

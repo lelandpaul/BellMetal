@@ -41,7 +41,8 @@ extension Stage {
   }
   
   public var tenorPair: (Bell, Bell) {
-    (Bell(rawValue: rawValue - 1)!, Bell(rawValue: rawValue)!)
+    precondition(self > .one, "tenorPair requires at least two bells: \(self)")
+    return (Bell(rawValue: rawValue - 1)!, Bell(rawValue: rawValue)!)
   }
   
   public func includes(_ bell: Bell) -> Bool {

@@ -162,6 +162,7 @@ extension MusicType {
     _ rows: Block,
     backstrokeStart: Bool = false
   ) -> Int {
+    guard rows.stage > .one else { return 0 }
     let (nearTenor, tenor) = rows.stage.tenorPair
     let mask = try? Mask(
       string: Array(repeating: "x", count: rows.stage.count - 2).joined() +

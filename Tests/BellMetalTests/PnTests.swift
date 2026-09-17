@@ -56,7 +56,7 @@ struct PlaceNotationTests {
   }
   
   @Test func repeatTimes() async throws {
-    let pb4_second_lead = Block(Array(try pb4_first_lead.transpose(by: pb4_first_lead.last!).dropFirst()))
+    let pb4_second_lead = Block(Array(try pb4_first_lead.transpose(by: pb4_first_lead.last).dropFirst()))
     let first_two_leads = Block(Array((pb4_first_lead + pb4_second_lead).dropFirst()))
     
     let pricked = try pb4.prick(repeat: .times(2))
