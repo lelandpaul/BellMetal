@@ -3,7 +3,7 @@ import Foundation
 /// An ordered sequence of rows. Differs from [Row] in
 /// enforcing a consistent stage and in keeping a Set
 /// for quick truth-checking.
-public struct Block {
+public struct Block: Sendable {
   public let stage: Stage
   internal let rows: [RawRow]
   internal let rowSet: Set<RawRow>
@@ -57,6 +57,29 @@ extension Block: Hashable {
   public func hash(into hasher: inout Hasher) {
     hasher.combine(stage)
     hasher.combine(rows)
+  }
+}
+
+// MARK: - Codable
+
+extension Block: Codable {
+  /// Encodes/decodes as a plain array of Rows, not the internal
+  /// bit-packed storage (or the redundant rowSet cache).
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let rows = try container.decode([Row].self)
+    guard !rows.isEmpty else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Block cannot be empty")
+    }
+    guard Set(rows.map(\.stage)).count == 1 else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Block rows have inconsistent stages")
+    }
+    self.init(rows)
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(Array(self))
   }
 }
 

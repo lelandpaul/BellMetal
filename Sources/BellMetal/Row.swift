@@ -2,7 +2,7 @@ import Foundation
 
 /// A representation of an individual row, i.e. an arbitrary permutation
 /// on some number of bells.
-public struct Row: Equatable, Hashable {
+public struct Row: Equatable, Hashable, Sendable {
   public let stage: Stage
   internal let row: RawRow
   
@@ -89,6 +89,27 @@ extension Row: CustomStringConvertible {
       row >>= 4
     }
     return result.joined()
+  }
+}
+
+// MARK: - Codable
+
+extension Row: Codable {
+  /// Encodes/decodes as its string representation (e.g. "14235"), not the
+  /// internal bit-packed storage.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let string = try container.decode(String.self)
+    do {
+      try self.init(validating: string)
+    } catch {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid Row: \(string)")
+    }
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(description)
   }
 }
 

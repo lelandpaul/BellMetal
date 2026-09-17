@@ -7,7 +7,7 @@ import Foundation
 /// "xxxxxx78" represents all rows ending 78 on Major.
 /// Masks can be `match`ed against some target row, or all matching
 /// rows may be iterated over via `allMatchingRows()`.
-public struct Mask {
+public struct Mask: Sendable {
   let stage: Stage
   let fixedPos: [Int: Bell]
   
@@ -61,6 +61,27 @@ extension Mask: CustomStringConvertible {
 }
 
 extension Mask: Equatable, Hashable { }
+
+// MARK: - Codable
+
+extension Mask: Codable {
+  /// Encodes/decodes as its string representation (e.g. "1xx2xx38"), not the
+  /// internal fixedPos dictionary.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let string = try container.decode(String.self)
+    do {
+      try self.init(string: string)
+    } catch {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid Mask: \(string)")
+    }
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(description)
+  }
+}
 
 extension Block {
   /// Return rows matching at least one of the supplied masks.

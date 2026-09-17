@@ -79,3 +79,23 @@ extension Bell: Comparable {
     lhs.rawValue < rhs.rawValue
   }
 }
+
+// MARK: - Codable
+
+extension Bell: Codable {
+  /// Encodes/decodes as its single-character representation (e.g. "T" for bell
+  /// 12), matching its string-literal form, not the raw enum value.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    let string = try container.decode(String.self)
+    guard string.count == 1, let bell = Bell(character: string[string.startIndex]) else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid Bell character: \(string)")
+    }
+    self = bell
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(description)
+  }
+}

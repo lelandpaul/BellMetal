@@ -14,6 +14,67 @@ public enum MusicType: Sendable {
   case custom(name: String, score: @Sendable (Block) -> Int)
 }
 
+// MARK: - Codable
+
+extension MusicType: Codable {
+  private enum CodingKeys: String, CodingKey {
+    case kind
+    case length
+  }
+
+  /// Every case round-trips except `.custom`, which carries a closure and so
+  /// can never be encoded or decoded -- encoding throws `EncodingError`, and
+  /// decoding a `.custom`-tagged payload throws `DecodingError`.
+  private enum Kind: String, Codable {
+    case fiveSix, cru, runs, run, wrap, namedRow, namedRowCombo, tenorsReversed, backBellCombo, comboNearMiss, custom
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    switch try container.decode(Kind.self, forKey: .kind) {
+    case .fiveSix: self = .fiveSix
+    case .cru: self = .cru
+    case .runs: self = .runs
+    case .run: self = .run(length: try container.decode(Int.self, forKey: .length))
+    case .wrap: self = .wrap
+    case .namedRow: self = .namedRow
+    case .namedRowCombo: self = .namedRowCombo
+    case .tenorsReversed: self = .tenorsReversed
+    case .backBellCombo: self = .backBellCombo
+    case .comboNearMiss: self = .comboNearMiss
+    case .custom:
+      throw DecodingError.dataCorruptedError(
+        forKey: .kind,
+        in: container,
+        debugDescription: "MusicType.custom cannot be decoded -- it carries a closure"
+      )
+    }
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    switch self {
+    case .fiveSix: try container.encode(Kind.fiveSix, forKey: .kind)
+    case .cru: try container.encode(Kind.cru, forKey: .kind)
+    case .runs: try container.encode(Kind.runs, forKey: .kind)
+    case .run(let length):
+      try container.encode(Kind.run, forKey: .kind)
+      try container.encode(length, forKey: .length)
+    case .wrap: try container.encode(Kind.wrap, forKey: .kind)
+    case .namedRow: try container.encode(Kind.namedRow, forKey: .kind)
+    case .namedRowCombo: try container.encode(Kind.namedRowCombo, forKey: .kind)
+    case .tenorsReversed: try container.encode(Kind.tenorsReversed, forKey: .kind)
+    case .backBellCombo: try container.encode(Kind.backBellCombo, forKey: .kind)
+    case .comboNearMiss: try container.encode(Kind.comboNearMiss, forKey: .kind)
+    case .custom(let name, _):
+      throw EncodingError.invalidValue(self, EncodingError.Context(
+        codingPath: encoder.codingPath,
+        debugDescription: "MusicType.custom(\"\(name)\") cannot be encoded -- it carries a closure"
+      ))
+    }
+  }
+}
+
 extension MusicType {
   public func score(_ rows: Block) -> Int {
     switch self {
