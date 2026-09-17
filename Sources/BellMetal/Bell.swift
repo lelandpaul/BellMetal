@@ -1,7 +1,7 @@
 import Foundation
 
 /// An enum representing an individual bell.
-public enum Bell: UInt8 {
+public enum Bell: UInt8, Sendable {
   case b1, b2, b3, b4, b5, b6, b7, b8, b9, b0, bE, bT, bA, bB, bC, bD
 }
 
