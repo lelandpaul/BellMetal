@@ -38,7 +38,7 @@ struct PnParsingTests {
     // place 1 (since place 2 is even) leaving {1,2,11,12} made overall.
     // Before the tokenizer recognized letter places, "2E" parsed as "2" alone,
     // silently losing the made place at 11 and 12 and producing the wrong row.
-    let pn = try PlaceNotation("2E", at: .maximus)
+    let pn = try PlaceNotation(string: "2E", at: .maximus)
     #expect(pn.leadhead == "1243658709ET")
   }
 
@@ -111,19 +111,19 @@ struct PnParsingTests {
     let pb4 = "x4x4,2"
     let pb4_changes: [Row] = ["2143", "1324", "2143", "1324", "2143", "1324", "2143", "1243"]
     let expectedPb4 = PlaceNotation(stage: .minimus, changes: pb4_changes.map(\.row))
-    #expect(try PlaceNotation(pb4) == expectedPb4)
+    #expect(try PlaceNotation(string: pb4) == expectedPb4)
 
     let g5 = "3,1.5.1.5.1"
     let g5_changes: [Row] = ["21354", "13254", "21435", "13254", "21435", "13254", "21435", "13254", "21435", "13254"]
     let expectedG5 = PlaceNotation(stage: .doubles, changes: g5_changes.map(\.row))
-    #expect(try PlaceNotation(g5) == expectedG5)
+    #expect(try PlaceNotation(string: g5) == expectedG5)
   }
-  
+
   @Test func parsePNWithExplicitStage() throws {
     let lb6: PlaceNotation = "6:x4x4,2"
-    #expect(try lb6 == PlaceNotation("x4x4,2", at: .minor))
-    
-    let invalid: PlaceNotation? = try? PlaceNotation("4:x4x4,2", at: .minor)
+    #expect(try lb6 == PlaceNotation(string: "x4x4,2", at: .minor))
+
+    let invalid: PlaceNotation? = try? PlaceNotation(string: "4:x4x4,2", at: .minor)
     #expect(invalid == nil)
   }
 }

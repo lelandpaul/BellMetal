@@ -53,15 +53,8 @@ struct ErrorsTests {
 
   @Test func maskInitInvalidMask() {
     // 'D' (bell 16) isn't valid on a 3-bell stage (inferred from the string's length).
-    //
-    // NOTE: the argument must be a `String` value, not a string literal passed
-    // directly -- `Mask("x1D")` resolves to the ExpressibleByStringLiteral
-    // initializer (which force-tries and crashes on invalid input) rather than
-    // this throwing one, even when written as `try Mask("x1D")`. Binding it to
-    // a named `String` first forces normal overload resolution onto init(_:) throws.
-    let invalidMask: String = "x1D"
     #expect(throws: BellMetalError.invalidMask) {
-      try Mask(invalidMask)
+      try Mask(string: "x1D")
     }
   }
 
@@ -111,7 +104,7 @@ struct ErrorsTests {
   @Test func placeNotationExplicitStageConflict() {
     // "6:" declares Minor (6 bells); the `at:` parameter says Major -- they disagree.
     #expect(throws: BellMetalError.invalidPlaceNotation) {
-      try PlaceNotation("6:14", at: .major)
+      try PlaceNotation(string: "6:14", at: .major)
     }
   }
 
@@ -123,14 +116,12 @@ struct ErrorsTests {
     // characters correctly when called directly (see parsePlacesInvalidCharacter).
     // So "1Z3" parses as two separate one-place changes ("1", "3") instead of
     // throwing .invalidPlaceNotation for the unrecognized "Z".
-    let pnString: String = "1Z3"
-    let pn = try? PlaceNotation(pnString)
+    let pn = try? PlaceNotation(string: "1Z3")
     #expect(pn != nil)
   }
 
   @Test func prickStageMismatch() throws {
-    let pb4String: String = "x4x4,2"
-    let pn = try PlaceNotation(pb4String) // inferred Minimus
+    let pn = try PlaceNotation(string: "x4x4,2") // inferred Minimus
     let wrongStageRow: Row = "123456" // Minor
     #expect(throws: BellMetalError.stageMismatch) {
       try pn.prick(at: wrongStageRow)
@@ -138,9 +129,8 @@ struct ErrorsTests {
   }
 
   @Test func placeNotationConcatenateStageMismatch() throws {
-    let pb4String: String = "x4x4,2"
-    let minimus = try PlaceNotation(pb4String)
-    let doubles = try PlaceNotation("12", at: .doubles)
+    let minimus = try PlaceNotation(string: "x4x4,2")
+    let doubles = try PlaceNotation(string: "12", at: .doubles)
     #expect(throws: BellMetalError.stageMismatch) {
       try minimus.concatenate(with: doubles)
     }

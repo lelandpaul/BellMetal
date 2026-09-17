@@ -55,7 +55,7 @@ extension MusicType {
       front + "65" + back,
       "56" + back + front,
       "65" + back + front
-    ].compactMap { try? Mask($0) }
+    ].compactMap { try? Mask(string: $0) }
     return (try? rows.count(matchingAny: masks)) ?? 0
   }
   
@@ -74,10 +74,10 @@ extension MusicType {
       }
     var masks: [Mask] = []
     runSegments.forEach { seg in
-      if let m = try? Mask(seg + empty) { masks.append(m) }
-      if let m = try? Mask(seg.reversed() + empty) { masks.append(m) }
-      if let m = try? Mask(empty + seg) { masks.append(m) }
-      if let m = try? Mask(empty + seg.reversed()) { masks.append(m) }
+      if let m = try? Mask(string: seg + empty) { masks.append(m) }
+      if let m = try? Mask(string: seg.reversed() + empty) { masks.append(m) }
+      if let m = try? Mask(string: empty + seg) { masks.append(m) }
+      if let m = try? Mask(string: empty + seg.reversed()) { masks.append(m) }
     }
     return (try? rows.count(matchingAny: masks)) ?? 0
   }
@@ -115,8 +115,8 @@ extension MusicType {
       let suffix = Array(repeating: "x", count: row.stage.count - i).joined()
       let rowA = row.prefix(row.stage.count - i).map({ $0.description }).joined()
       let rowB = row.suffix(i).map({ $0.description }).joined()
-      guard let maskA = try? Mask(prefix+rowA),
-            let maskB = try? Mask(rowB+suffix) else {
+      guard let maskA = try? Mask(string: prefix+rowA),
+            let maskB = try? Mask(string: rowB+suffix) else {
         return nil
       }
       return (maskA, maskB)
@@ -164,7 +164,7 @@ extension MusicType {
   ) -> Int {
     let (nearTenor, tenor) = rows.stage.tenorPair
     let mask = try? Mask(
-      Array(repeating: "x", count: rows.stage.count - 2).joined() +
+      string: Array(repeating: "x", count: rows.stage.count - 2).joined() +
       tenor.description + nearTenor.description
     )
     guard let mask else { return 0 }
