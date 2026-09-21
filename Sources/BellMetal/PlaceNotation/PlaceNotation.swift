@@ -326,7 +326,7 @@ extension PlaceNotation {
   /// the notation it was extracted from.
   /// - Throws: `BellMetalError.invalidIndex` if `range` isn't within
   ///   `0..<count` (inclusive of `count` as an upper bound).
-  public func subNotation(_ range: Range<Int>) throws -> PlaceNotation {
+  public func slice(_ range: Range<Int>) throws -> PlaceNotation {
     guard range.lowerBound >= 0, range.upperBound <= count else {
       throw BellMetalError.invalidIndex
     }

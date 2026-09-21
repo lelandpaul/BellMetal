@@ -139,16 +139,16 @@ struct PlaceNotationTests {
     }
   }
 
-  @Test func subNotationExtractsRange() throws {
+  @Test func sliceExtractsRange() throws {
     let original: PlaceNotation = "8:x14x16x18"
     let expected: PlaceNotation = "8:14x"
-    #expect(try original.subNotation(1..<3) == expected)
+    #expect(try original.slice(1..<3) == expected)
   }
 
-  @Test func subNotationIsIndependentlyPrickable() throws {
+  @Test func sliceIsIndependentlyPrickable() throws {
     let original: PlaceNotation = "8:x14x16x18"
     let full = try original.prick(keeping: .keepBoth)
-    let sub = try original.subNotation(1..<3)
+    let sub = try original.slice(1..<3)
 
     let subPricked = try sub.prick(at: full[1], keeping: .keepBoth)
 
@@ -157,13 +157,13 @@ struct PlaceNotationTests {
     #expect(subPricked[2] == full[3])
   }
 
-  @Test func subNotationThrowsOnOutOfBoundsRange() {
+  @Test func sliceThrowsOnOutOfBoundsRange() {
     let original: PlaceNotation = "8:x14x16x18"
     #expect(throws: BellMetalError.invalidIndex) {
-      try original.subNotation(0..<(original.count + 1))
+      try original.slice(0..<(original.count + 1))
     }
     #expect(throws: BellMetalError.invalidIndex) {
-      try original.subNotation(-1..<2)
+      try original.slice(-1..<2)
     }
   }
 }
