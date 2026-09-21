@@ -4,7 +4,8 @@ import Testing
 
 @Suite("Stage unit tests")
 struct StageTests {
-  @Test func description() {
+  @Test("Every Stage case has its traditional English name as its description")
+  func description() {
     #expect(Stage.one.description == "One")
     #expect(Stage.two.description == "Two")
     #expect(Stage.singles.description == "Singles")

@@ -19,7 +19,8 @@ struct PlaceNotationTests {
   ]
   
 
-  @Test func representation() async throws {
+  @Test("description finds a palindromic split and falls back to a flat notation string otherwise")
+  func representation() async throws {
     #expect(pb4.description == "x14x14,12")
     
     #expect(london6.description == "36x36.14x12x36.14x14.36,12")
@@ -28,7 +29,8 @@ struct PlaceNotationTests {
     #expect(asym.description == "5.3.1.3.1")
   }
   
-  @Test func prickRowsCorrectly() async throws {
+  @Test("prick(keeping:) includes or drops the first/last row as requested")
+  func prickRowsCorrectly() async throws {
     let pb4_no_first: Block = Block(Array(pb4_first_lead.dropFirst()))
     let pb4_no_last: Block = Block(Array(pb4_first_lead.dropLast()))
     let pb4_neither: Block = Block(Array(pb4_no_first.dropLast()))
@@ -39,7 +41,8 @@ struct PlaceNotationTests {
     #expect(try pb4.prick(keeping: .keepBoth) == pb4_first_lead)
   }
   
-  @Test func startingRow() async throws {
+  @Test("prick(at:) starts pricking from the given row instead of rounds")
+  func startingRow() async throws {
     let pricked = try pb4.prick(at: "4321")
     let expected: Block = [
       "3412",
@@ -55,7 +58,8 @@ struct PlaceNotationTests {
     #expect(pricked == expected)
   }
   
-  @Test func repeatTimes() async throws {
+  @Test(".times(n) repeats pricking for exactly n leads")
+  func repeatTimes() async throws {
     let pb4_second_lead = Block(Array(try pb4_first_lead.transpose(by: pb4_first_lead.last).dropFirst()))
     let first_two_leads = Block(Array((pb4_first_lead + pb4_second_lead).dropFirst()))
     
@@ -64,13 +68,15 @@ struct PlaceNotationTests {
     #expect(pricked == first_two_leads)
   }
   
-  @Test func repeatRound() async throws {
+  @Test(".untilRound repeats pricking until the block comes back round")
+  func repeatRound() async throws {
     let all_pb4 = try pb4.prick(repeat: .untilRound)
     #expect(all_pb4.isTrue)
     #expect(all_pb4.count == 24)
   }
   
-  @Test func repeatFalse() async throws {
+  @Test(".untilFalse repeats pricking until a row repeats")
+  func repeatFalse() async throws {
     let x = try PlaceNotation(string: "x", at: .minimus)
     let pricked = try x.prick(repeat: .untilFalse)
     #expect(pricked == ["2143", "1234"])
@@ -80,7 +86,8 @@ struct PlaceNotationTests {
     #expect(longerPricked == ["2143", "2413", "4231", "2413"])
   }
   
-  @Test func repeatPosition() async throws {
+  @Test(".untilPosition repeats pricking until the given bell reaches the given position")
+  func repeatPosition() async throws {
     let wrong = try pb4.prick(repeat: .untilPosition(bell: .b4, position: 3))
     let before = try pb4.prick(repeat: .untilPosition(bell: .b4, position: 2))
     let home = try pb4.prick(repeat: .untilPosition(bell: .b4, position: 4))
@@ -89,39 +96,45 @@ struct PlaceNotationTests {
     #expect(home.count == 24)
   }
   
-  @Test func concatenation() {
+  @Test("Concatenating two PlaceNotations with + appends their changes")
+  func concatenation() {
     let a: PlaceNotation = "6:12"
     let b: PlaceNotation = "6:14"
     #expect(a + b == "6:12.14")
   }
 
-  @Test func replacingLastChangeWithString() throws {
+  @Test("replacingLast(with:) replaces the final change with a change parsed from a string")
+  func replacingLastChangeWithString() throws {
     let original: PlaceNotation = "8:x16x16,12"
     let expected: PlaceNotation = "8:x16x16,14"
     #expect(try original.replacingLast(with: "14") == expected)
   }
 
-  @Test func replacingLastChangeWithPlaceNotation() throws {
+  @Test("replacingLast(with:) replaces the final change with another PlaceNotation")
+  func replacingLastChangeWithPlaceNotation() throws {
     let original: PlaceNotation = "8:x16x16,12"
     let expected: PlaceNotation = "8:x16x16,14"
     let replacement: PlaceNotation = "8:14"
     #expect(try original.replacingLast(with: replacement) == expected)
   }
 
-  @Test func replacingSingleChangeAtIndex() throws {
+  @Test("replacing(at:with:) replaces the single change at the given index")
+  func replacingSingleChangeAtIndex() throws {
     let original: PlaceNotation = "8:x14x16x18"
     let expected: PlaceNotation = "8:14.14x16x18"
     #expect(try original.replacing(at: 0, with: "14") == expected)
   }
 
-  @Test func replacingRangeWithDifferentLength() throws {
+  @Test("replacing(_:with:) can replace a range with a replacement of a different length")
+  func replacingRangeWithDifferentLength() throws {
     let original: PlaceNotation = "8:x14x16x18"
     let replacement: PlaceNotation = "8:16x16"
     let expected: PlaceNotation = "8:x16x16.16x18"
     #expect(try original.replacing(1..<3, with: replacement) == expected)
   }
 
-  @Test func replacingThrowsOnStageMismatch() {
+  @Test("replacing(at:with:) throws when the replacement's stage doesn't match")
+  func replacingThrowsOnStageMismatch() {
     let original: PlaceNotation = "8:x14x16x18"
     let replacement: PlaceNotation = "6:14"
     #expect(throws: BellMetalError.stageMismatch) {
@@ -129,7 +142,8 @@ struct PlaceNotationTests {
     }
   }
 
-  @Test func replacingThrowsOnOutOfBoundsIndex() {
+  @Test("replacing(at:with:) throws BellMetalError.invalidIndex for an out-of-bounds index")
+  func replacingThrowsOnOutOfBoundsIndex() {
     let original: PlaceNotation = "8:x14x16x18"
     #expect(throws: BellMetalError.invalidIndex) {
       try original.replacing(at: original.count, with: "14")
@@ -139,13 +153,15 @@ struct PlaceNotationTests {
     }
   }
 
-  @Test func sliceExtractsRange() throws {
+  @Test("slice(_:) extracts the changes in the given range as their own PlaceNotation")
+  func sliceExtractsRange() throws {
     let original: PlaceNotation = "8:x14x16x18"
     let expected: PlaceNotation = "8:14x"
     #expect(try original.slice(1..<3) == expected)
   }
 
-  @Test func sliceIsIndependentlyPrickable() throws {
+  @Test("A sliced PlaceNotation can be pricked on its own from an arbitrary starting row")
+  func sliceIsIndependentlyPrickable() throws {
     let original: PlaceNotation = "8:x14x16x18"
     let full = try original.prick(keeping: .keepBoth)
     let sub = try original.slice(1..<3)
@@ -157,7 +173,8 @@ struct PlaceNotationTests {
     #expect(subPricked[2] == full[3])
   }
 
-  @Test func sliceThrowsOnOutOfBoundsRange() {
+  @Test("slice(_:) throws BellMetalError.invalidIndex for an out-of-bounds range")
+  func sliceThrowsOnOutOfBoundsRange() {
     let original: PlaceNotation = "8:x14x16x18"
     #expect(throws: BellMetalError.invalidIndex) {
       try original.slice(0..<(original.count + 1))
