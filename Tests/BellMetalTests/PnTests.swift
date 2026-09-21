@@ -138,4 +138,32 @@ struct PlaceNotationTests {
       try original.replacing(at: -1, with: "14")
     }
   }
+
+  @Test func sliceExtractsRange() throws {
+    let original: PlaceNotation = "8:x14x16x18"
+    let expected: PlaceNotation = "8:14x"
+    #expect(try original.slice(1..<3) == expected)
+  }
+
+  @Test func sliceIsIndependentlyPrickable() throws {
+    let original: PlaceNotation = "8:x14x16x18"
+    let full = try original.prick(keeping: .keepBoth)
+    let sub = try original.slice(1..<3)
+
+    let subPricked = try sub.prick(at: full[1], keeping: .keepBoth)
+
+    #expect(subPricked[0] == full[1])
+    #expect(subPricked[1] == full[2])
+    #expect(subPricked[2] == full[3])
+  }
+
+  @Test func sliceThrowsOnOutOfBoundsRange() {
+    let original: PlaceNotation = "8:x14x16x18"
+    #expect(throws: BellMetalError.invalidIndex) {
+      try original.slice(0..<(original.count + 1))
+    }
+    #expect(throws: BellMetalError.invalidIndex) {
+      try original.slice(-1..<2)
+    }
+  }
 }

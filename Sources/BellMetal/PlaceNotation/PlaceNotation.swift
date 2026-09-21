@@ -320,6 +320,18 @@ extension PlaceNotation {
   public func replacingLast(with replacement: String) throws -> PlaceNotation {
     try replacing(at: count - 1, with: replacement)
   }
+
+  /// The changes in `range`, as their own independent PlaceNotation --
+  /// prickable on its own, from any starting row, not just as part of
+  /// the notation it was extracted from.
+  /// - Throws: `BellMetalError.invalidIndex` if `range` isn't within
+  ///   `0..<count` (inclusive of `count` as an upper bound).
+  public func slice(_ range: Range<Int>) throws -> PlaceNotation {
+    guard range.lowerBound >= 0, range.upperBound <= count else {
+      throw BellMetalError.invalidIndex
+    }
+    return PlaceNotation(stage: stage, changes: Array(changes[range]))
+  }
 }
 
 // MARK: - Lines
