@@ -14,7 +14,8 @@ struct CodableTests {
     return decoded
   }
 
-  @Test func bellRoundTrip() throws {
+  @Test("Bell encodes and decodes as its letter, and rejects unknown letters")
+  func bellRoundTrip() throws {
     for bell in Stage.sixteen.allBells {
       _ = try roundTrip(bell)
     }
@@ -26,7 +27,8 @@ struct CodableTests {
     }
   }
 
-  @Test func stageRoundTrip() throws {
+  @Test("Stage encodes and decodes as its bell count, and rejects out-of-range counts")
+  func stageRoundTrip() throws {
     for stage: Stage in [.one, .doubles, .major, .cinques, .sixteen] {
       _ = try roundTrip(stage)
     }
@@ -41,7 +43,8 @@ struct CodableTests {
     }
   }
 
-  @Test func rowRoundTrip() throws {
+  @Test("Row encodes and decodes as its string, and rejects non-permutation strings")
+  func rowRoundTrip() throws {
     let row: Row = "2143658709TEBADC"
     _ = try roundTrip(row)
 
@@ -53,7 +56,8 @@ struct CodableTests {
     }
   }
 
-  @Test func blockRoundTrip() throws {
+  @Test("Block round-trips through JSON, and rejects empty or mixed-stage arrays")
+  func blockRoundTrip() throws {
     let block: Block = ["1234", "2143", "2413"]
     _ = try roundTrip(block)
 
@@ -65,7 +69,8 @@ struct CodableTests {
     }
   }
 
-  @Test func maskRoundTrip() throws {
+  @Test("Mask encodes and decodes as its string, and rejects letters outside its stage")
+  func maskRoundTrip() throws {
     let mask: Mask = "1xx2xx38"
     _ = try roundTrip(mask)
 
@@ -77,7 +82,8 @@ struct CodableTests {
     }
   }
 
-  @Test func placeNotationRoundTrip() throws {
+  @Test("PlaceNotation encodes as a stage/notation pair, including the all-cross edge case")
+  func placeNotationRoundTrip() throws {
     let pn = try PlaceNotation(string: "x4x4,2")
     _ = try roundTrip(pn)
 
@@ -92,7 +98,8 @@ struct CodableTests {
     #expect(json?["notation"] as? String == pn.description)
   }
 
-  @Test func namedRowRoundTrip() throws {
+  @Test("NamedRow encodes and decodes as its case name")
+  func namedRowRoundTrip() throws {
     for namedRow in NamedRow.allCases {
       _ = try roundTrip(namedRow)
     }
@@ -100,7 +107,8 @@ struct CodableTests {
     #expect(String(data: data, encoding: .utf8) == "\"backrounds\"")
   }
 
-  @Test func musicTypeRoundTrip() throws {
+  @Test("Built-in MusicType cases round-trip, preserving associated values like .run's length")
+  func musicTypeRoundTrip() throws {
     // MusicType isn't Equatable, so compare via description instead -- this
     // also confirms .run's associated length round-trips (a wrong length
     // would produce a different description).
@@ -115,7 +123,8 @@ struct CodableTests {
     }
   }
 
-  @Test func musicTypeCustomCannotRoundTrip() throws {
+  @Test("A .custom MusicType cannot be encoded or decoded, since its closure isn't Codable")
+  func musicTypeCustomCannotRoundTrip() throws {
     let custom = MusicType.custom(name: "test", score: { _ in 0 })
     #expect(throws: (any Error).self) {
       try encoder.encode(custom)
@@ -125,14 +134,16 @@ struct CodableTests {
     }
   }
 
-  @Test func musicSchemeRoundTrip() throws {
+  @Test("MusicScheme.shared round-trips through JSON and scores the same after decoding")
+  func musicSchemeRoundTrip() throws {
     let data = try encoder.encode(MusicScheme.shared)
     let decoded = try decoder.decode(MusicScheme.self, from: data)
     let rounds = Block(Row("12345678"))
     #expect(decoded.score(rounds) == MusicScheme.shared.score(rounds))
   }
 
-  @Test func musicSchemeWithCustomTypeCannotBeEncoded() throws {
+  @Test("A MusicScheme containing a .custom MusicType cannot be encoded")
+  func musicSchemeWithCustomTypeCannotBeEncoded() throws {
     let scheme = MusicScheme([(.custom(name: "x", score: { _ in 1 }), weight: 1)])
     #expect(throws: (any Error).self) {
       try encoder.encode(scheme)

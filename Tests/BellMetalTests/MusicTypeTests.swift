@@ -2,9 +2,10 @@ import Foundation
 import Testing
 @testable import BellMetal
 
-@Suite
+@Suite("MusicType unit tests")
 struct MusicTypeTests {
-  @Test func comboNearMiss() {
+  @Test("scoreComboNearMiss scores 1 for a single- or double-swap near miss, 0 otherwise")
+  func comboNearMiss() {
     let single: Row = "1324"
     let double: Row = "2143"
     let not: Row = "3124"
@@ -13,7 +14,8 @@ struct MusicTypeTests {
     #expect(MusicType.scoreComboNearMiss(Block(not)) == 0)
   }
 
-  @Test func fiveSix() {
+  @Test("scoreFiveSix matches a 56/65 combo at either end of the row, and is 0 at or below Minor")
+  func fiveSix() {
     #expect(MusicType.scoreFiveSix(Block("12345678")) == 1) // xxxx5678
     #expect(MusicType.scoreFiveSix(Block("12346578")) == 1) // xxxx6578
     #expect(MusicType.scoreFiveSix(Block("56781234")) == 1) // 5678xxxx
@@ -23,7 +25,8 @@ struct MusicTypeTests {
     #expect(MusicType.scoreFiveSix(Block("123456")) == 0)
   }
 
-  @Test func cru() {
+  @Test("scoreCru matches recognized CRU combos, and is only defined for Major")
+  func cru() {
     #expect(MusicType.scoreCru(Block("12345678")) == 1) // xxxx5678
     #expect(MusicType.scoreCru(Block("12356478")) == 1) // xxxx6478
     #expect(MusicType.scoreCru(Block("12345768")) == 0) // not a recognized combo
@@ -31,7 +34,8 @@ struct MusicTypeTests {
     #expect(MusicType.scoreCru(Block("1234567")) == 0)
   }
 
-  @Test func runs() {
+  @Test("scoreRuns matches front or back runs of the given length, one point per matching row")
+  func runs() {
     // Front run reversed ("4321") and back run reversed ("8765") both match,
     // but scoring is per-row (matches-any), so a single row still scores 1.
     #expect(MusicType.scoreRuns(Block("43218765"), length: 4) == 1)
@@ -53,7 +57,8 @@ struct MusicTypeTests {
     #expect(MusicType.scoreRuns(Block("12345678"), length: 3) == 0) // length must be >= 4
   }
 
-  @Test func wrap() {
+  @Test("scoreWraps matches a rounds-wrap at the seam between adjacent rows")
+  func wrap() {
     // Row A ends "...1234" and Row B starts "5678..." -> a rounds-wrap at the seam.
     let wrapping: Block = ["56781234", "56784321"]
     #expect(MusicType.scoreWraps(wrapping) == 1)
@@ -62,12 +67,14 @@ struct MusicTypeTests {
     #expect(MusicType.scoreWraps(Block("12345678")) == 0)
   }
 
-  @Test func namedRow() {
+  @Test("scoreNamedRows counts rows in the block that match a NamedRow")
+  func namedRow() {
     let block: Block = ["12345678", "13572468", "21435687"]
     #expect(MusicType.scoreNamedRows(block) == 2) // rounds + queens match; the third row matches nothing
   }
 
-  @Test func namedRowCombo() {
+  @Test("scoreNamedRowCombos matches combo masks where defined, and is 0 on stages without them")
+  func namedRowCombo() {
     #expect(MusicType.scoreNamedRowCombos(Block("1234765")) == 1) // xxxx765 on Triples
     #expect(MusicType.scoreNamedRowCombos(Block("1234567")) == 0) // rounds: no match
     // No combo masks are defined for Doubles or Minor.
@@ -75,7 +82,8 @@ struct MusicTypeTests {
     #expect(MusicType.scoreNamedRowCombos(Block("123456")) == 0)
   }
 
-  @Test func tenorsReversed() {
+  @Test("scoreTenorsReversed only counts the backstroke row by default, unless backstrokeStart is flipped")
+  func tenorsReversed() {
     // Positions 7,8 = 8,7 ("tenors reversed") on both rows; only the backstroke (odd index) counts by default.
     let block: Block = ["12345687", "21345687"]
     #expect(MusicType.scoreTenorsReversed(block) == 1)
@@ -87,12 +95,14 @@ struct MusicTypeTests {
     #expect(MusicType.scoreTenorsReversed(handOnly, backstrokeStart: true) == 1)
   }
 
-  @Test func tenorsReversedOnDegenerateStage() {
+  @Test("scoreTenorsReversed doesn't crash on Stage .one, which has no tenor pair")
+  func tenorsReversedOnDegenerateStage() {
     // Stage .one has no tenor pair (and no room for a 2-bell mask); must not crash.
     #expect(MusicType.scoreTenorsReversed(Block("1")) == 0)
   }
 
-  @Test func backBellCombo() {
+  @Test("scoreBackBellCombo matches recognized back-bell combos, and is only defined for Major")
+  func backBellCombo() {
     let block: Block = ["12345678", "56781234", "12345687"]
     #expect(MusicType.scoreBackBellCombo(block) == 2) // first two rows match; the third doesn't
     // Only defined for Major.

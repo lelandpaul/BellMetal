@@ -4,7 +4,8 @@ import Testing
 
 @Suite("Unit tests for various utility functions")
 struct UtilTests {
-  @Test func reducePalindrome() {
+  @Test("reduceOddPalindrome() returns the reduced half of an odd-length palindrome, or nil otherwise")
+  func reducePalindrome() {
     #expect([1].reduceOddPalindrome() == [1])
     #expect([1,2,3,4].reduceOddPalindrome() == nil)
     #expect([1,2,3].reduceOddPalindrome() == nil)

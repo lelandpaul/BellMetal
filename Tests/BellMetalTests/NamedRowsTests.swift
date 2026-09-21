@@ -7,46 +7,54 @@ struct NamedRowsTests {
 
   // MARK: - Trivial identities
 
-  @Test func rounds() {
+  @Test("Rounds is the identity row on any stage")
+  func rounds() {
     #expect(NamedRow.rounds.row(at: .minor) == "123456")
     #expect(NamedRow.rounds.row(at: .major) == "12345678")
   }
 
-  @Test func backrounds() {
+  @Test("Backrounds is rounds reversed")
+  func backrounds() {
     #expect(NamedRow.backrounds.row(at: .minor) == "654321")
     #expect(NamedRow.backrounds.row(at: .major) == "87654321")
   }
 
   // MARK: - Canonical named rows
 
-  @Test func queens() {
+  @Test("Queens produces the canonical odds-then-evens row")
+  func queens() {
     #expect(NamedRow.queens.row(at: .minor) == "135246")
     #expect(NamedRow.queens.row(at: .major) == "13572468")
   }
 
-  @Test func kings() {
+  @Test("Kings produces the canonical descending-odds-then-evens row")
+  func kings() {
     #expect(NamedRow.kings.row(at: .minor) == "531246")
     #expect(NamedRow.kings.row(at: .major) == "75312468")
   }
 
-  @Test func tittums() {
+  @Test("Tittums produces the canonical interleaved-halves row")
+  func tittums() {
     #expect(NamedRow.tittums.row(at: .minor) == "142536")
     #expect(NamedRow.tittums.row(at: .major) == "15263748")
   }
 
-  @Test func explodedTittums() {
+  @Test("Exploded tittums interleaves the reversed upper half with the lower half")
+  func explodedTittums() {
     // half = (n+1)/2; upwards = reversed(1...half); downwards = (half+1...n); interleaved
     #expect(NamedRow.explodedtittums.row(at: .major) == "45362718")
   }
 
-  @Test func intermediate() {
+  @Test("Intermediate is rounds with 1 and n fixed and every other adjacent pair swapped")
+  func intermediate() {
     // rounds with places 1 & n made, all other adjacent pairs swapped
     #expect(NamedRow.intermediate.row(at: .major) == "13254768")
   }
 
   // MARK: - Rows derived by relationship to queens/kings
 
-  @Test func princesIsKingsWithFrontPairSwapped() {
+  @Test("Princes is Kings with bells 1 and 2 interchanged, elsewhere unchanged")
+  func princesIsKingsWithFrontPairSwapped() {
     // Princes: Kings with the values 1 and 2 interchanged.
     let kings = NamedRow.kings.row(at: .major)!
     let princes = NamedRow.princes.row(at: .major)!
@@ -59,7 +67,8 @@ struct NamedRowsTests {
     }
   }
 
-  @Test func princessesIsQueensWithMiddlePairSwapped() {
+  @Test("Princesses is Queens with the two middle positions swapped, elsewhere unchanged")
+  func princessesIsQueensWithMiddlePairSwapped() {
     // Princesses: Queens with positions half & half+1 (4 & 5 on Major) swapped.
     let queens = NamedRow.queens.row(at: .major)!
     let princesses = NamedRow.princesses.row(at: .major)!
@@ -71,7 +80,8 @@ struct NamedRowsTests {
     }
   }
 
-  @Test func jokersIsJacksTimesIntermediate() {
+  @Test("Jokers equals Jacks multiplied by Intermediate")
+  func jokersIsJacksTimesIntermediate() {
     let jacks = NamedRow.jacks.row(at: .major)!
     let intermediate = NamedRow.intermediate.row(at: .major)!
     let jokers = NamedRow.jokers.row(at: .major)!
@@ -80,7 +90,8 @@ struct NamedRowsTests {
 
   // MARK: - Stage boundaries
 
-  @Test func whittingtonsOnlyDefinedForMinorThroughRoyal() {
+  @Test("Whittingtons is only defined for stages Minor through Royal")
+  func whittingtonsOnlyDefinedForMinorThroughRoyal() {
     #expect(NamedRow.whittingtons.row(at: .singles) == nil)
     #expect(NamedRow.whittingtons.row(at: .minimus) == nil)
     #expect(NamedRow.whittingtons.row(at: .doubles) == nil)
@@ -92,7 +103,8 @@ struct NamedRowsTests {
     #expect(NamedRow.whittingtons.row(at: .cinques) == nil)
   }
 
-  @Test func rollercoasterSeesawSawseeOnlyDefinedForMajor() {
+  @Test("Rollercoaster, seesaw, and sawsee are only defined for Major")
+  func rollercoasterSeesawSawseeOnlyDefinedForMajor() {
     for row in [NamedRow.rollercoaster, .seesaw, .sawsee] {
       #expect(row.row(at: .minor) == nil)
       #expect(row.row(at: .triples) == nil)
@@ -104,7 +116,8 @@ struct NamedRowsTests {
     #expect(NamedRow.sawsee.row(at: .major) == "56781234")
   }
 
-  @Test func hagdykeAndJacksDefinedFromDoublesUpward() {
+  @Test("Hagdyke and Jacks are undefined below Doubles, and defined at every stage from Doubles upward")
+  func hagdykeAndJacksDefinedFromDoublesUpward() {
     for stage: Stage in [.singles, .minimus] {
       #expect(NamedRow.hagdyke.row(at: stage) == nil)
       #expect(NamedRow.jacks.row(at: stage) == nil)
@@ -117,7 +130,8 @@ struct NamedRowsTests {
     }
   }
 
-  @Test func allCasesCount() {
+  @Test("NamedRow has exactly 16 cases")
+  func allCasesCount() {
     #expect(NamedRow.allCases.count == 16)
   }
 }

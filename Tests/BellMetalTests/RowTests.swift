@@ -5,7 +5,8 @@ import Testing
 struct RowTests {
   
   // MARK: Instantiation
-  @Test func instantiateWithStringLiteral() async throws {
+  @Test("A Row instantiated from a string literal has the right description, raw value, and stage")
+  func instantiateWithStringLiteral() async throws {
     let a: Row = "14235"
     #expect(a.description == "14235")
     #expect(a.row == 0x42130)
@@ -17,7 +18,8 @@ struct RowTests {
     #expect(b.stage == .sixteen)
   }
   
-  @Test func instantiateWithArrayLiteral() async throws {
+  @Test("A Row instantiated from an array literal has the right description, raw value, and stage")
+  func instantiateWithArrayLiteral() async throws {
     let a: Row = [.b1, .b4, .b2, .b3, .b5]
     #expect(a.description == "14235")
     #expect(a.row == 0x42130)
@@ -31,7 +33,8 @@ struct RowTests {
 
   // MARK: Safe construction
 
-  @Test func validatingArrayLiteral() throws {
+  @Test("Row(validating:) throws on an empty, duplicate, or out-of-stage array of bells")
+  func validatingArrayLiteral() throws {
     let row = try Row(validating: [.b1, .b4, .b2, .b3, .b5])
     #expect(row == "14235")
 
@@ -46,7 +49,8 @@ struct RowTests {
     }
   }
 
-  @Test func validatingString() throws {
+  @Test("Row(validating:) throws on a string with invalid characters or a non-permutation")
+  func validatingString() throws {
     let row = try Row(validating: "14235")
     #expect(row == "14235")
 
@@ -58,7 +62,8 @@ struct RowTests {
     }
   }
 
-  @Test func bellFromCharacter() {
+  @Test("Bell(character:) resolves a valid bell character, or nil for an unrecognized one")
+  func bellFromCharacter() {
     #expect(Bell(character: "1") == .b1)
     #expect(Bell(character: "E") == .bE)
     #expect(Bell(character: "D") == .bD)
@@ -67,7 +72,8 @@ struct RowTests {
 
   //MARK: Subscripts
 
-  @Test func bellAtPosition() {
+  @Test("bell(at:) returns the bell at a 1-indexed position, or nil out of range")
+  func bellAtPosition() {
     let a: Row = "14235"
     #expect(a.bell(at: 1) == .b1)
     #expect(a.bell(at: 5) == .b5)
@@ -75,7 +81,8 @@ struct RowTests {
     #expect(a.bell(at: 6) == nil)
   }
 
-  @Test func retrieveBellAtPostition() async throws {
+  @Test("Raw and subscript position lookups agree on which bell sits at each position")
+  func retrieveBellAtPostition() async throws {
     let a: Row = "14235"
     #expect(a.row.rawBell(at: 0) == 0x0)
     #expect(a.row.rawBell(at: 1) == 0x3)
@@ -90,7 +97,8 @@ struct RowTests {
     #expect(a[5] == .b5)
   }
   
-  @Test func retrievePositionofBell() async throws {
+  @Test("Raw and subscript bell lookups agree on which position each bell sits in")
+  func retrievePositionofBell() async throws {
     let a: Row = "14235"
     #expect(a.row.rawPosition(of: 0x0) == 0)
     #expect(a.row.rawPosition(of: 0x1) == 2)
@@ -106,7 +114,8 @@ struct RowTests {
   }
   
   // MARK: Operators
-  @Test func equality() async throws {
+  @Test("Rows are equal iff their bell sequences match")
+  func equality() async throws {
     let a: Row = "14235"
     let b: Row = [.b1, .b4, .b2, .b3, .b5]
     let x: Row = "32145"
@@ -115,7 +124,8 @@ struct RowTests {
     #expect(b != x)
   }
   
-  @Test func multiplication() async throws {
+  @Test("Row multiplication with * composes permutations, and isn't commutative")
+  func multiplication() async throws {
     let x: Row = "214365"
     let h: Row = "132546"
     let xh: Row = "241635"
@@ -133,7 +143,8 @@ struct RowTests {
     
   }
   
-  @Test func inverse() async throws {
+  @Test("invert() produces the inverse permutation, which multiplies with the original to rounds")
+  func inverse() async throws {
     let t: Row = "312645"
     let expected: Row = "231564"
     #expect(t.invert() == expected)
@@ -141,7 +152,8 @@ struct RowTests {
     #expect(t.invert() * t == "123456")
   }
   
-  @Test func powers() async throws {
+  @Test("The ** operator raises a row to positive, zero, and negative integer powers")
+  func powers() async throws {
     let t: Row = "4123"
     #expect(t ** 0 == "1234")
     #expect(t ** 1 == "4123")
@@ -153,21 +165,24 @@ struct RowTests {
     #expect(t ** -2 == "3412")
   }
   
-  @Test func powerAndMultPrecedence() async throws {
+  @Test("** binds tighter than * when the two operators are mixed")
+  func powerAndMultPrecedence() async throws {
     let t: Row = "4123"
     let x: Row = "2143"
     #expect(t ** 2 * x == "4321")
     #expect(t * x ** 2 == "4123")
   }
   
-  @Test func extention() async throws {
+  @Test("extend(to:) appends bells in ascending place order up to the target stage")
+  func extention() async throws {
     let t: Row = "4321"
     #expect(try t.extend(to: .doubles) == "43215")
     #expect(try t.extend(to: .major) == "43215678")
     #expect(try t.extend(to: .royal) == "4321567890")
   }
   
-  @Test func swap() async throws {
+  @Test("swapUp(from:) swaps the pair of bells starting at the given raw position")
+  func swap() async throws {
     let t_row: Row = "1234"
     let t_raw = t_row.row
     #expect(Row(stage: .minimus, row: t_raw.swapUp(from: 0)) == "2134")
