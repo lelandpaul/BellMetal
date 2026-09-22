@@ -7,28 +7,42 @@ struct PnParsingTests {
   typealias PNP = PlaceNotationParser
   
   @Test("splitToChanges tokenizes a notation string on \"x\" and place runs")
-  func splitRightPlace() {
+  func splitRightPlace() throws {
     let pn = "x12x14"
     let expected = ["x", "12", "x", "14"]
-    #expect(PNP.splitToChanges(pn) == expected)
+    #expect(try PNP.splitToChanges(pn) == expected)
   }
-  
+
   @Test("splitToChanges tokenizes \".\" and \"-\" separators the same way as \"x\"")
-  func splitWrongPlace() {
+  func splitWrongPlace() throws {
     let pn = "-12.34-"
     let expected = ["-", "12", "34", "-"]
-    #expect(PNP.splitToChanges(pn) == expected)
+    #expect(try PNP.splitToChanges(pn) == expected)
   }
 
   @Test("splitToChanges keeps digit/letter compound changes as a single token")
-  func splitCompoundChangesWithLetterPlaces() {
+  func splitCompoundChangesWithLetterPlaces() throws {
     // Places above bell 10 use E,T,A,B,C,D (see interpretPlace/representPlace).
     // A compound change mixing digits and letters must stay one token.
-    #expect(PNP.splitToChanges("1E") == ["1E"])
-    #expect(PNP.splitToChanges("90ET") == ["90ET"])
+    #expect(try PNP.splitToChanges("1E") == ["1E"])
+    #expect(try PNP.splitToChanges("90ET") == ["90ET"])
     // A change consisting solely of a letter must not be dropped entirely.
-    #expect(PNP.splitToChanges("E") == ["E"])
-    #expect(PNP.splitToChanges("x1E.T4x") == ["x", "1E", "T4", "x"])
+    #expect(try PNP.splitToChanges("E") == ["E"])
+    #expect(try PNP.splitToChanges("x1E.T4x") == ["x", "1E", "T4", "x"])
+  }
+
+  @Test("splitToChanges throws on an unrecognized character instead of silently dropping it")
+  func splitToChangesThrowsOnUnrecognizedCharacter() {
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.splitToChanges("1Z3")
+    }
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      // Regression: on an even stage, silently dropping "n" from "12n" left
+      // "12" -- a token that happens to parse without error (see
+      // inferExternalPlaces), silently producing the wrong place list
+      // instead of surfacing the unrecognized character.
+      try PNP.splitToChanges("12n")
+    }
   }
 
   @Test("parsePlaces resolves letter places (E, T, ...) to their bell numbers")
@@ -54,18 +68,18 @@ struct PnParsingTests {
   }
   
   @Test("splitAndExpandPalindrome expands a comma-separated palindromic notation into its full change list")
-  func palindromeExpansion() {
+  func palindromeExpansion() throws {
     let pb = "x14x14,12"
     let expected_pb = ["x", "14", "x", "14", "x", "14", "x", "12"]
-    #expect(PNP.splitAndExpandPalindrome(pb) == expected_pb)
-    
+    #expect(try PNP.splitAndExpandPalindrome(pb) == expected_pb)
+
     let grandsire5 = "3,1.5.1.5.1"
     let expected_g5 = ["3", "1", "5", "1", "5", "1", "5", "1", "5", "1"]
-    #expect(PNP.splitAndExpandPalindrome(grandsire5) == expected_g5)
-    
+    #expect(try PNP.splitAndExpandPalindrome(grandsire5) == expected_g5)
+
     let test = "x12,56.18"
     let expected_test = ["x","12","x","56","18","56"]
-    #expect(PNP.splitAndExpandPalindrome(test) == expected_test)
+    #expect(try PNP.splitAndExpandPalindrome(test) == expected_test)
   }
   
   @Test("inferStage picks the smallest stage consistent with the given places")

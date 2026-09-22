@@ -15,8 +15,26 @@ public enum PlaceNotationParser {
   private static let changeRegex: Regex = /([0-9ETABCD]+|x|-)/
   
   /// Given a non-symmetric PN string, extract individual changes.
-  public static func splitToChanges(_ pn: String) -> [String] {
-    pn.matches(of: changeRegex).map(\.0).map(String.init)
+  /// Throws `.invalidPlaceNotation` if any character in `pn` isn't part of a
+  /// recognized token (a place run, "x", or "-") or the "." separator
+  /// between tokens -- e.g. an unrecognized character like "Z" would
+  /// otherwise be silently skipped by the tokenizer instead of being
+  /// reported.
+  public static func splitToChanges(_ pn: String) throws -> [String] {
+    var tokens: [String] = []
+    var consumedUpTo = pn.startIndex
+    for match in pn.matches(of: changeRegex) {
+      let gap = pn[consumedUpTo..<match.range.lowerBound]
+      guard gap.allSatisfy({ $0 == "." }) else {
+        throw BellMetalError.invalidPlaceNotation
+      }
+      tokens.append(String(match.0))
+      consumedUpTo = match.range.upperBound
+    }
+    guard pn[consumedUpTo...].allSatisfy({ $0 == "." }) else {
+      throw BellMetalError.invalidPlaceNotation
+    }
+    return tokens
   }
 
   /// Split palindromic sections
@@ -26,13 +44,15 @@ public enum PlaceNotationParser {
 
   /// Splits a place notation string into individual changes, expanding any
   /// comma-separated palindromic sections along the way (see
-  /// ``PlaceNotation`` for the palindrome syntax).
-  public static func splitAndExpandPalindrome(_ pn:String) -> [String] {
+  /// ``PlaceNotation`` for the palindrome syntax). Throws
+  /// `.invalidPlaceNotation` if any section contains an unrecognized
+  /// character (see `splitToChanges`).
+  public static func splitAndExpandPalindrome(_ pn:String) throws -> [String] {
     guard pn.contains(",") else {
-      return splitToChanges(pn)
+      return try splitToChanges(pn)
     }
-    return splitPalindrome(pn).flatMap { segment in
-      splitToChanges(segment).makePalindrome()
+    return try splitPalindrome(pn).flatMap { segment in
+      try splitToChanges(segment).makePalindrome()
     }
   }
 }

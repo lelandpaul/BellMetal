@@ -127,17 +127,27 @@ struct ErrorsTests {
     }
   }
 
-  @Test("Known gap: PlaceNotation's tokenizer silently drops unrecognized characters instead of throwing")
-  func placeNotationSilentlyDropsUnrecognizedCharacters() {
-    // NOTE: this documents a real gap, not desired behavior. The top-level tokenizer
-    // (PlaceNotationParser.changeRegex) only ever extracts digit runs, "x", or "-";
-    // any other character (e.g. "Z") is silently skipped rather than causing a throw,
-    // even though PlaceNotationParser.parsePlaces itself validates individual
-    // characters correctly when called directly (see parsePlacesInvalidCharacter).
-    // So "1Z3" parses as two separate one-place changes ("1", "3") instead of
-    // throwing .invalidPlaceNotation for the unrecognized "Z".
-    let pn = try? PlaceNotation(string: "1Z3")
-    #expect(pn != nil)
+  @Test("Regression: PlaceNotation throws on an unrecognized character instead of silently dropping it")
+  func placeNotationThrowsOnUnrecognizedCharacters() {
+    // The top-level tokenizer (PlaceNotationParser.splitToChanges) used to only
+    // ever extract digit runs, "x", or "-", silently skipping any other
+    // character (e.g. "Z") rather than throwing -- so "1Z3" parsed as two
+    // separate one-place changes ("1", "3") instead of surfacing the
+    // unrecognized "Z".
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PlaceNotation(string: "1Z3")
+    }
+  }
+
+  @Test("Regression: an unrecognized character silently dropped from a compound token no longer parses valid-but-wrong on even stages")
+  func placeNotationThrowsOnUnrecognizedCharacterInCompoundToken() {
+    // "12n" used to silently drop the "n", leaving the compound token "12".
+    // On an even stage, "12" happens to be a fully valid change on its own
+    // (see inferExternalPlaces), so this parsed without error to the wrong
+    // place list instead of throwing for the unrecognized "n".
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PlaceNotation(string: "12n", at: .major)
+    }
   }
 
   @Test("prick(at:) throws when the starting row is a different stage")
