@@ -15,8 +15,26 @@ public enum PlaceNotationParser {
   private static let changeRegex: Regex = /([0-9ETABCD]+|x|-)/
   
   /// Given a non-symmetric PN string, extract individual changes.
-  public static func splitToChanges(_ pn: String) -> [String] {
-    pn.matches(of: changeRegex).map(\.0).map(String.init)
+  /// Throws `.invalidPlaceNotation` if any character in `pn` isn't part of a
+  /// recognized token (a place run, "x", or "-") or the "." separator
+  /// between tokens -- e.g. an unrecognized character like "Z" would
+  /// otherwise be silently skipped by the tokenizer instead of being
+  /// reported.
+  public static func splitToChanges(_ pn: String) throws -> [String] {
+    var tokens: [String] = []
+    var consumedUpTo = pn.startIndex
+    for match in pn.matches(of: changeRegex) {
+      let gap = pn[consumedUpTo..<match.range.lowerBound]
+      guard gap.allSatisfy({ $0 == "." }) else {
+        throw BellMetalError.invalidPlaceNotation
+      }
+      tokens.append(String(match.0))
+      consumedUpTo = match.range.upperBound
+    }
+    guard pn[consumedUpTo...].allSatisfy({ $0 == "." }) else {
+      throw BellMetalError.invalidPlaceNotation
+    }
+    return tokens
   }
 
   /// Split palindromic sections
@@ -26,13 +44,15 @@ public enum PlaceNotationParser {
 
   /// Splits a place notation string into individual changes, expanding any
   /// comma-separated palindromic sections along the way (see
-  /// ``PlaceNotation`` for the palindrome syntax).
-  public static func splitAndExpandPalindrome(_ pn:String) -> [String] {
+  /// ``PlaceNotation`` for the palindrome syntax). Throws
+  /// `.invalidPlaceNotation` if any section contains an unrecognized
+  /// character (see `splitToChanges`).
+  public static func splitAndExpandPalindrome(_ pn:String) throws -> [String] {
     guard pn.contains(",") else {
-      return splitToChanges(pn)
+      return try splitToChanges(pn)
     }
-    return splitPalindrome(pn).flatMap { segment in
-      splitToChanges(segment).makePalindrome()
+    return try splitPalindrome(pn).flatMap { segment in
+      try splitToChanges(segment).makePalindrome()
     }
   }
 }
@@ -145,12 +165,32 @@ extension PlaceNotationParser {
     }
     return adjustedChange
   }
+
+  /// Validates that a fully-resolved change (after `inferExternalPlaces`) is
+  /// structurally well-formed: its places start on an odd-numbered position
+  /// and strictly alternate odd/even thereafter. This is what guarantees
+  /// every unlisted position -- before the first place, between two listed
+  /// places, and after the last -- has an even number of bells left to pair
+  /// up and cross. A change like `"128"` on Major (places 1, 2, 8) breaks
+  /// this (2 and 8 are both even, back to back) and must be rejected rather
+  /// than silently accepted with place 3..7 crossing incorrectly.
+  /// Throws `.invalidPlaceNotation` if the sequence doesn't alternate.
+  public static func validateAlternatingParity(_ places: [Int]) throws {
+    for (index, place) in places.enumerated() {
+      let expectOdd = index.isMultiple(of: 2)
+      let isOdd = !place.isMultiple(of: 2)
+      guard isOdd == expectOdd else { throw BellMetalError.invalidPlaceNotation }
+    }
+  }
   
 
   /// Fully parses a place notation string (expanding palindromes and implicit
   /// places) into its stage and the explicit places held by each change, in
   /// order. Pass `stage` if it's known; otherwise it's inferred (see
-  /// `inferStage`) and may throw if it can't be.
+  /// `inferStage`) and may throw if it can't be. Throws `.invalidPlaceNotation`
+  /// if any resulting change isn't structurally valid (see
+  /// `validateAlternatingParity`) -- e.g. `"128"` on Major, which has two
+  /// even places (2 and 8) back to back.
   public static func parseAllPlaces(
     _ pn: String,
     at stage: Stage? = nil
@@ -158,7 +198,9 @@ extension PlaceNotationParser {
     let changes = try splitAndExpandPalindrome(pn)
       .map(parsePlaces)
     let knownStage = try stage ?? inferStage(changes)
-    return (knownStage, changes.map { inferExternalPlaces($0, at: knownStage)})
+    let adjustedChanges = changes.map { inferExternalPlaces($0, at: knownStage) }
+    try adjustedChanges.forEach(validateAlternatingParity)
+    return (knownStage, adjustedChanges)
   }
   
   internal static func changeToRawRow(_ places: [Int], at stage: Stage) -> RawRow {

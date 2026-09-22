@@ -7,28 +7,38 @@ struct PnParsingTests {
   typealias PNP = PlaceNotationParser
   
   @Test("splitToChanges tokenizes a notation string on \"x\" and place runs")
-  func splitRightPlace() {
+  func splitRightPlace() throws {
     let pn = "x12x14"
     let expected = ["x", "12", "x", "14"]
-    #expect(PNP.splitToChanges(pn) == expected)
+    #expect(try PNP.splitToChanges(pn) == expected)
   }
-  
+
   @Test("splitToChanges tokenizes \".\" and \"-\" separators the same way as \"x\"")
-  func splitWrongPlace() {
+  func splitWrongPlace() throws {
     let pn = "-12.34-"
     let expected = ["-", "12", "34", "-"]
-    #expect(PNP.splitToChanges(pn) == expected)
+    #expect(try PNP.splitToChanges(pn) == expected)
   }
 
   @Test("splitToChanges keeps digit/letter compound changes as a single token")
-  func splitCompoundChangesWithLetterPlaces() {
+  func splitCompoundChangesWithLetterPlaces() throws {
     // Places above bell 10 use E,T,A,B,C,D (see interpretPlace/representPlace).
     // A compound change mixing digits and letters must stay one token.
-    #expect(PNP.splitToChanges("1E") == ["1E"])
-    #expect(PNP.splitToChanges("90ET") == ["90ET"])
+    #expect(try PNP.splitToChanges("1E") == ["1E"])
+    #expect(try PNP.splitToChanges("90ET") == ["90ET"])
     // A change consisting solely of a letter must not be dropped entirely.
-    #expect(PNP.splitToChanges("E") == ["E"])
-    #expect(PNP.splitToChanges("x1E.T4x") == ["x", "1E", "T4", "x"])
+    #expect(try PNP.splitToChanges("E") == ["E"])
+    #expect(try PNP.splitToChanges("x1E.T4x") == ["x", "1E", "T4", "x"])
+  }
+
+  @Test("splitToChanges throws on an unrecognized character instead of silently dropping it")
+  func splitToChangesThrowsOnUnrecognizedCharacter() {
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.splitToChanges("1Z3")
+    }
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.splitToChanges("12n")
+    }
   }
 
   @Test("parsePlaces resolves letter places (E, T, ...) to their bell numbers")
@@ -54,18 +64,18 @@ struct PnParsingTests {
   }
   
   @Test("splitAndExpandPalindrome expands a comma-separated palindromic notation into its full change list")
-  func palindromeExpansion() {
+  func palindromeExpansion() throws {
     let pb = "x14x14,12"
     let expected_pb = ["x", "14", "x", "14", "x", "14", "x", "12"]
-    #expect(PNP.splitAndExpandPalindrome(pb) == expected_pb)
-    
+    #expect(try PNP.splitAndExpandPalindrome(pb) == expected_pb)
+
     let grandsire5 = "3,1.5.1.5.1"
     let expected_g5 = ["3", "1", "5", "1", "5", "1", "5", "1", "5", "1"]
-    #expect(PNP.splitAndExpandPalindrome(grandsire5) == expected_g5)
-    
+    #expect(try PNP.splitAndExpandPalindrome(grandsire5) == expected_g5)
+
     let test = "x12,56.18"
     let expected_test = ["x","12","x","56","18","56"]
-    #expect(PNP.splitAndExpandPalindrome(test) == expected_test)
+    #expect(try PNP.splitAndExpandPalindrome(test) == expected_test)
   }
   
   @Test("inferStage picks the smallest stage consistent with the given places")
@@ -94,7 +104,43 @@ struct PnParsingTests {
     #expect(PNP.inferExternalPlaces([], at: .minor) == [])
     #expect(PNP.inferExternalPlaces([], at: .doubles) == [5])
   }
-  
+
+  @Test("validateAlternatingParity accepts a places list that starts odd and strictly alternates")
+  func validateAlternatingParityAccepts() throws {
+    #expect(throws: Never.self) { try PNP.validateAlternatingParity([]) }
+    #expect(throws: Never.self) { try PNP.validateAlternatingParity([1]) }
+    #expect(throws: Never.self) { try PNP.validateAlternatingParity([1, 4]) }
+    #expect(throws: Never.self) { try PNP.validateAlternatingParity([3, 6]) }
+    #expect(throws: Never.self) { try PNP.validateAlternatingParity([1, 4, 5, 8]) }
+  }
+
+  @Test("validateAlternatingParity rejects a places list that breaks alternation, an even count on an odd stage, or an odd count on an even stage")
+  func validateAlternatingParityRejects() {
+    // 2 and 8 are both even, back to back -- breaks alternation regardless of
+    // stage; this is the real shape of the "128 on Major" bug.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.validateAlternatingParity([1, 2, 8])
+    }
+    // Doesn't start on an odd place.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.validateAlternatingParity([2, 4])
+    }
+    // Two odd places back to back.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.validateAlternatingParity([1, 3])
+    }
+  }
+
+  @Test("parseAllPlaces throws on a change whose places don't strictly alternate odd/even")
+  func parseAllPlacesRejectsNonAlternatingChange() {
+    // "128" on Major: 1, 2, 8 are already both external places (1st and
+    // 8th), so inferExternalPlaces has nothing to add -- this used to parse
+    // without error to the wrong row instead of being rejected.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.parseAllPlaces("128", at: .major)
+    }
+  }
+
   @Test("parseAllPlaces parses a full notation string into its per-change place lists")
   func parseAllPlaces() throws {
     let pb4 = "x4x4,2"

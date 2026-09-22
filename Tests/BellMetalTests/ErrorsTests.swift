@@ -127,17 +127,29 @@ struct ErrorsTests {
     }
   }
 
-  @Test("Known gap: PlaceNotation's tokenizer silently drops unrecognized characters instead of throwing")
-  func placeNotationSilentlyDropsUnrecognizedCharacters() {
-    // NOTE: this documents a real gap, not desired behavior. The top-level tokenizer
-    // (PlaceNotationParser.changeRegex) only ever extracts digit runs, "x", or "-";
-    // any other character (e.g. "Z") is silently skipped rather than causing a throw,
-    // even though PlaceNotationParser.parsePlaces itself validates individual
-    // characters correctly when called directly (see parsePlacesInvalidCharacter).
-    // So "1Z3" parses as two separate one-place changes ("1", "3") instead of
-    // throwing .invalidPlaceNotation for the unrecognized "Z".
-    let pn = try? PlaceNotation(string: "1Z3")
-    #expect(pn != nil)
+  @Test("Regression: PlaceNotation throws on an unrecognized character instead of silently dropping it")
+  func placeNotationThrowsOnUnrecognizedCharacters() {
+    // The top-level tokenizer (PlaceNotationParser.splitToChanges) used to only
+    // ever extract digit runs, "x", or "-", silently skipping any other
+    // character (e.g. "Z") rather than throwing -- so "1Z3" parsed as two
+    // separate one-place changes ("1", "3") instead of surfacing the
+    // unrecognized "Z".
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PlaceNotation(string: "1Z3")
+    }
+  }
+
+  @Test("Regression: a change whose places don't strictly alternate odd/even is rejected instead of silently mis-parsed")
+  func placeNotationThrowsOnNonAlternatingPlaces() {
+    // "128" on Major (places 1, 2, 8) has two even places (2, 8) back to
+    // back with nothing alternating between them -- structurally invalid
+    // place notation, since it leaves places 3-7 with no consistent way to
+    // pair up and cross. This used to parse without error (both 1 and 8 are
+    // already the stage's external places, so inferExternalPlaces had
+    // nothing to add) and silently produce the wrong row.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PlaceNotation(string: "128", at: .major)
+    }
   }
 
   @Test("prick(at:) throws when the starting row is a different stage")
