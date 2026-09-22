@@ -132,7 +132,7 @@ extension PlaceNotationParser {
   /// - Parameter values: The values to convert.
   /// - Returns: The place notation representation string.
   public static func representPlaces(_ values: [Int]) -> String {
-    representPlaces(values.map { Int($0) })
+    representPlaces(values.map { UInt8($0) })
   }
 
   /// Given a single change, return a list of places explicitly made.
