@@ -139,14 +139,16 @@ struct ErrorsTests {
     }
   }
 
-  @Test("Regression: an unrecognized character silently dropped from a compound token no longer parses valid-but-wrong on even stages")
-  func placeNotationThrowsOnUnrecognizedCharacterInCompoundToken() {
-    // "12n" used to silently drop the "n", leaving the compound token "12".
-    // On an even stage, "12" happens to be a fully valid change on its own
-    // (see inferExternalPlaces), so this parsed without error to the wrong
-    // place list instead of throwing for the unrecognized "n".
+  @Test("Regression: a change whose places don't strictly alternate odd/even is rejected instead of silently mis-parsed")
+  func placeNotationThrowsOnNonAlternatingPlaces() {
+    // "128" on Major (places 1, 2, 8) has two even places (2, 8) back to
+    // back with nothing alternating between them -- structurally invalid
+    // place notation, since it leaves places 3-7 with no consistent way to
+    // pair up and cross. This used to parse without error (both 1 and 8 are
+    // already the stage's external places, so inferExternalPlaces had
+    // nothing to add) and silently produce the wrong row.
     #expect(throws: BellMetalError.invalidPlaceNotation) {
-      try PlaceNotation(string: "12n", at: .major)
+      try PlaceNotation(string: "128", at: .major)
     }
   }
 

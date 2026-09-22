@@ -165,12 +165,32 @@ extension PlaceNotationParser {
     }
     return adjustedChange
   }
+
+  /// Validates that a fully-resolved change (after `inferExternalPlaces`) is
+  /// structurally well-formed: its places start on an odd-numbered position
+  /// and strictly alternate odd/even thereafter. This is what guarantees
+  /// every unlisted position -- before the first place, between two listed
+  /// places, and after the last -- has an even number of bells left to pair
+  /// up and cross. A change like `"128"` on Major (places 1, 2, 8) breaks
+  /// this (2 and 8 are both even, back to back) and must be rejected rather
+  /// than silently accepted with place 3..7 crossing incorrectly.
+  /// Throws `.invalidPlaceNotation` if the sequence doesn't alternate.
+  public static func validateAlternatingParity(_ places: [Int]) throws {
+    for (index, place) in places.enumerated() {
+      let expectOdd = index.isMultiple(of: 2)
+      let isOdd = !place.isMultiple(of: 2)
+      guard isOdd == expectOdd else { throw BellMetalError.invalidPlaceNotation }
+    }
+  }
   
 
   /// Fully parses a place notation string (expanding palindromes and implicit
   /// places) into its stage and the explicit places held by each change, in
   /// order. Pass `stage` if it's known; otherwise it's inferred (see
-  /// `inferStage`) and may throw if it can't be.
+  /// `inferStage`) and may throw if it can't be. Throws `.invalidPlaceNotation`
+  /// if any resulting change isn't structurally valid (see
+  /// `validateAlternatingParity`) -- e.g. `"128"` on Major, which has two
+  /// even places (2 and 8) back to back.
   public static func parseAllPlaces(
     _ pn: String,
     at stage: Stage? = nil
@@ -178,7 +198,9 @@ extension PlaceNotationParser {
     let changes = try splitAndExpandPalindrome(pn)
       .map(parsePlaces)
     let knownStage = try stage ?? inferStage(changes)
-    return (knownStage, changes.map { inferExternalPlaces($0, at: knownStage)})
+    let adjustedChanges = changes.map { inferExternalPlaces($0, at: knownStage) }
+    try adjustedChanges.forEach(validateAlternatingParity)
+    return (knownStage, adjustedChanges)
   }
   
   internal static func changeToRawRow(_ places: [Int], at stage: Stage) -> RawRow {

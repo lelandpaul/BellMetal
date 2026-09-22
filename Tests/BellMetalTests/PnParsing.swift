@@ -37,10 +37,6 @@ struct PnParsingTests {
       try PNP.splitToChanges("1Z3")
     }
     #expect(throws: BellMetalError.invalidPlaceNotation) {
-      // Regression: on an even stage, silently dropping "n" from "12n" left
-      // "12" -- a token that happens to parse without error (see
-      // inferExternalPlaces), silently producing the wrong place list
-      // instead of surfacing the unrecognized character.
       try PNP.splitToChanges("12n")
     }
   }
@@ -108,7 +104,43 @@ struct PnParsingTests {
     #expect(PNP.inferExternalPlaces([], at: .minor) == [])
     #expect(PNP.inferExternalPlaces([], at: .doubles) == [5])
   }
-  
+
+  @Test("validateAlternatingParity accepts a places list that starts odd and strictly alternates")
+  func validateAlternatingParityAccepts() throws {
+    #expect(throws: Never.self) { try PNP.validateAlternatingParity([]) }
+    #expect(throws: Never.self) { try PNP.validateAlternatingParity([1]) }
+    #expect(throws: Never.self) { try PNP.validateAlternatingParity([1, 4]) }
+    #expect(throws: Never.self) { try PNP.validateAlternatingParity([3, 6]) }
+    #expect(throws: Never.self) { try PNP.validateAlternatingParity([1, 4, 5, 8]) }
+  }
+
+  @Test("validateAlternatingParity rejects a places list that breaks alternation, an even count on an odd stage, or an odd count on an even stage")
+  func validateAlternatingParityRejects() {
+    // 2 and 8 are both even, back to back -- breaks alternation regardless of
+    // stage; this is the real shape of the "128 on Major" bug.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.validateAlternatingParity([1, 2, 8])
+    }
+    // Doesn't start on an odd place.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.validateAlternatingParity([2, 4])
+    }
+    // Two odd places back to back.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.validateAlternatingParity([1, 3])
+    }
+  }
+
+  @Test("parseAllPlaces throws on a change whose places don't strictly alternate odd/even")
+  func parseAllPlacesRejectsNonAlternatingChange() {
+    // "128" on Major: 1, 2, 8 are already both external places (1st and
+    // 8th), so inferExternalPlaces has nothing to add -- this used to parse
+    // without error to the wrong row instead of being rejected.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.parseAllPlaces("128", at: .major)
+    }
+  }
+
   @Test("parseAllPlaces parses a full notation string into its per-change place lists")
   func parseAllPlaces() throws {
     let pb4 = "x4x4,2"
