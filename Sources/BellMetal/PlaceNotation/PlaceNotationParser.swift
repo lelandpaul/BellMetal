@@ -108,7 +108,33 @@ extension PlaceNotationParser {
     default: fatalError("Invalid place: \(value)")
     }
   }
+
+  /// Converts a place number to its single-character representation, e.g. 12
+  /// to "T", using the same convention as `Bell`. Convenience overload of
+  /// `representPlace(_:UInt8)` for callers working with `Int`, e.g. the
+  /// place lists produced by `parsePlaces`/`inferExternalPlaces`.
+  /// - Precondition: `value` must be between 1 and 16, inclusive.
+  public static func representPlace(_ value: Int) -> String {
+    representPlace(UInt8(value))
+  }
   
+  /// Converts a sequence of places to its string representation.
+  /// Performs no validation that this represents a valid change.
+  /// - Parameter values: The values to convert.
+  /// - Returns: The place notation representation string.
+  public static func representPlaces(_ values: [UInt8]) -> String {
+    values.sorted().map(representPlace(_:)).joined()
+  }
+  
+  /// Converts a sequence of places to its string representation.
+  /// Performs no validation that this represents a valid change.
+  /// Convenience overload for callers with Int.
+  /// - Parameter values: The values to convert.
+  /// - Returns: The place notation representation string.
+  public static func representPlaces(_ values: [Int]) -> String {
+    representPlaces(values.map { Int($0) })
+  }
+
   /// Given a single change, return a list of places explicitly made.
   /// (Does not add implicit external places -- see `inferExternalPlaces`.)
   /// Throws `.invalidPlaceNotation` if the change contains an invalid character.
