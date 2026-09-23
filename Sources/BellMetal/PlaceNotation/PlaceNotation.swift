@@ -259,6 +259,33 @@ extension PlaceNotation {
   }
 }
 
+// MARK: - Stage change
+extension PlaceNotation {
+  /// Covers this place notation up to `newStage` by adding cover bells --
+  /// the place-notation-level equivalent of `Row.extend(to:)`/
+  /// `Block.extend(to:)`, but extending the *notation* itself rather than
+  /// each row it produces: every change gains an implicit place at every
+  /// new position, so a bell rung there never moves, in any row this
+  /// notation ever pricks -- not just the ones already computed.
+  ///
+  /// Each change is already stored internally as a `RawRow` -- the same
+  /// permutation representation a `Row` itself uses, composed onto the
+  /// current row one change at a time by `prick(at:keeping:repeat:)` --
+  /// so extending a change and extending a row are the literal same
+  /// operation: `RawRow.extend(from:to:)` already leaves every new
+  /// position mapped to itself (its own `rounds` bit pattern), which is
+  /// exactly "this bell doesn't move" whether the row it's applied to is
+  /// a whole row or one change's own permutation.
+  /// - Throws: `BellMetalError.invalidStage` if `newStage` isn't strictly
+  ///   higher than this place notation's own stage.
+  public func covered(at newStage: Stage) throws -> PlaceNotation {
+    guard stage < newStage else {
+      throw BellMetalError.invalidStage
+    }
+    return PlaceNotation(stage: newStage, changes: changes.map { $0.extend(from: stage, to: newStage) })
+  }
+}
+
 // MARK: - PN to PN operations
 extension PlaceNotation {
   /// Safe, throwing concatenation of two PlaceNotations
