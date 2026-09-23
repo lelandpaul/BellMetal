@@ -151,6 +151,38 @@ struct RowTests {
     #expect(t * t.invert() == "123456")
     #expect(t.invert() * t == "123456")
   }
+
+  // MARK: Every stage, including the maximum
+
+  @Test(
+    "Multiplication and invert() round-trip correctly at every stage from One through Sixteen",
+    arguments: 1...16
+  )
+  func multiplicationAndInverseRoundTripAtEveryStage(bellCount: Int) throws {
+    let stage = Stage(bellCount)
+    // A nontrivial permutation any stage can build without hand-authoring
+    // a literal: reversing rounds is its own inverse whenever it isn't
+    // already the identity (stage <= 2).
+    let reversed = try Row(validating: Array(stage.allBells.reversed()))
+    #expect(try reversed.multiply(by: reversed.invert()) == stage.rounds)
+    #expect(try reversed.invert().multiply(by: reversed) == stage.rounds)
+    #expect(reversed.invert().invert() == reversed)
+  }
+
+  @Test("Multiplication and invert() are correct at Sixteen specifically, not just non-crashing")
+  func multiplicationAndInverseAtSixteen() async throws {
+    // Regression test for a bug where RawRow.composePermutation and
+    // Row.invert() both trapped at Stage.sixteen (rawStage == 15): each
+    // built its result by loading bells at the top of the register and
+    // correcting with a right-shift of `4*(14 - rawStage)`, computed in
+    // unsigned arithmetic -- which underflowed exactly at rawStage == 15.
+    // Every adjacent pair swapped (the first change of a full "x" cross)
+    // is its own inverse: applying it twice is the identity.
+    let x: Row = "2143658709TEBADC"
+    #expect(x.stage == .sixteen)
+    #expect(x * x == Stage.sixteen.rounds)
+    #expect(x.invert() == x)
+  }
   
   @Test("The ** operator raises a row to positive, zero, and negative integer powers")
   func powers() async throws {
