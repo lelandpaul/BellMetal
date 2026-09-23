@@ -175,13 +175,9 @@ extension Row {
   /// Get the inverse row, i.e. the row such that
   /// x.multiply(by: x.invert) == stage.rounds
   public func invert() -> Row {
-    var newRow = UInt64.zero
-    for i in 0...self.stage.rawValue {
-      let pos: UInt8 = self.row.rawPosition(of: i)!
-      newRow |= UInt64(pos) << 60 // Put new bell on the left
-      newRow >>= 4
+    let newRow = RawRow.build(rawStage: stage.rawValue) { i in
+      self.row.rawPosition(of: i)!
     }
-    newRow >>= 4*(14 - self.stage.rawValue) // Right-justify. 14 bc 0-indexed and we've already shifted 1 nibble in the loop
     return Self.init(stage: stage, row: newRow)
   }
   

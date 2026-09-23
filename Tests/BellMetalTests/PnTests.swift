@@ -74,7 +74,22 @@ struct PlaceNotationTests {
     #expect(all_pb4.isTrue)
     #expect(all_pb4.count == 24)
   }
-  
+
+  @Test(
+    "A full cross notation ('x') round-trips to rounds when pricked at every stage, including the maximum (Sixteen)",
+    arguments: 1...16
+  )
+  func crossNotationRoundTripsAtEveryStage(bellCount: Int) throws {
+    // Regression test for a bug where the row-composition underneath
+    // pricking (RawRow.composePermutation) trapped at Stage.sixteen -- the
+    // very case that surfaced it: pricking "x" at every other stage
+    // already worked, so only the maximum stage would have caught this.
+    let stage = Stage(bellCount)
+    let cross = try PlaceNotation(string: "x", at: stage)
+    let course = try cross.prick(repeat: .untilRound)
+    #expect(course.last == stage.rounds)
+  }
+
   @Test(".untilFalse repeats pricking until a row repeats")
   func repeatFalse() async throws {
     let x = try PlaceNotation(string: "x", at: .minimus)

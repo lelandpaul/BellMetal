@@ -26,19 +26,36 @@ extension RawRow {
     return nil
   }
 
+  /// Builds a `RawRow` by placing `value(position)` at nibble `position`,
+  /// for every position from 0 through `rawStage`. The one loop shape
+  /// `composePermutation` and `Row.invert()` both need: compute one bell
+  /// per position, place it directly there.
+  ///
+  /// Placing each nibble straight at its own final position, rather than
+  /// loading it at the top of the register and correcting afterward by a
+  /// stage-dependent right-shift, is what keeps this correct at every
+  /// stage, including the maximum (`rawStage == 15`, `Stage.sixteen`): the
+  /// old top-loaded formulation's correction shift was `4*(14 - rawStage)`,
+  /// computed in unsigned arithmetic, which underflowed and trapped
+  /// exactly at `rawStage == 15`. Direct placement needs no such
+  /// correction at all -- `4 * position` is always `0...60`, comfortably
+  /// inside a 64-bit register for every representable stage.
+  internal static func build(rawStage: UInt8, value: (UInt8) -> UInt8) -> RawRow {
+    var newRow: RawRow = .zero
+    for position in 0...rawStage {
+      newRow |= RawRow(value(position)) << (4 * RawRow(position))
+    }
+    return newRow
+  }
+
   /// Handles multiplying two permutations. Performs no
   /// safety checks.
   internal func composePermutation(_ other: RawRow, rawStage: UInt8) -> RawRow {
-    var newRow = RawRow.zero
     var indices = other
-    for _ in (0...rawStage) {
-      let nextBell: UInt8 = UInt8(indices & 0xF)
-      newRow |= UInt64(self.rawBell(at: nextBell)) << 60 // Put new bell on the left
-      newRow >>= 4 // Shift over
-      indices >>= 4 // Shift over
+    return RawRow.build(rawStage: rawStage) { _ in
+      defer { indices >>= 4 }
+      return self.rawBell(at: UInt8(indices & 0xF))
     }
-    newRow >>= 4*(14 - rawStage) // Right-justify. 14 bc 0-indexed and we've already shifted 1 nibble in the loop
-    return newRow
   }
   
   /// Handles extending a row up to a higher stage by appending
