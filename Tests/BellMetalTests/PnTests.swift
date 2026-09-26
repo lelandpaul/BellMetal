@@ -148,6 +148,13 @@ struct PlaceNotationTests {
     #expect(try original.replacing(1..<3, with: replacement) == expected)
   }
 
+  @Test("stage is readable, whether inferred from the notation or given explicitly")
+  func publicStage() throws {
+    #expect(try PlaceNotation(string: "x18x18,12").stage == .major)
+    #expect(try PlaceNotation(string: "x", at: .minimus).stage == .minimus)
+    #expect(try PlaceNotation(string: "T:x1T").stage == .maximus)
+  }
+
   @Test("replacing(at:with:) throws when the replacement's stage doesn't match")
   func replacingThrowsOnStageMismatch() {
     let original: PlaceNotation = "8:x14x16x18"
