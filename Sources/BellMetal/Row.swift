@@ -249,6 +249,41 @@ extension Row {
   }
 }
 
+// MARK: - Place bell orders
+
+extension Row {
+  /// Taking this row as a leadhead, the order in which the place bells
+  /// follow one another: the bell that rings place bell `p` in one lead
+  /// rings place bell `q` in the next, where `q` is the place bell `p`
+  /// occupies in this row. E.g. Plain Bob Minor's leadhead `135264` gives
+  /// `[[1], [2, 4, 6, 5, 3]]`.
+  ///
+  /// Every place appears in exactly one order. Each order starts from its
+  /// lowest place, and the orders are sorted by that lowest place. Hunt
+  /// bells (places the leadhead leaves fixed) come out as one-element
+  /// orders; filter on `count > 1` for just the working bells.
+  ///
+  /// This is the cycle decomposition of the permutation taking each place
+  /// to the position of the bell of that number -- i.e. of `invert()`, not
+  /// of the row read as place → bell.
+  public var placeBellOrders: [[Int]] {
+    let count = stage.count
+    var seen = [Bool](repeating: false, count: count)
+    var orders = [[Int]]()
+    for start in 0..<count where !seen[start] {
+      var order = [Int]()
+      var place = start
+      repeat {
+        seen[place] = true
+        order.append(place + 1)
+        place = Int(row.rawPosition(of: UInt8(place))!) // Safe: every bell of the stage is present
+      } while place != start
+      orders.append(order)
+    }
+    return orders
+  }
+}
+
 // MARK: - Sequence conformance
 
 extension Row: Sequence {
