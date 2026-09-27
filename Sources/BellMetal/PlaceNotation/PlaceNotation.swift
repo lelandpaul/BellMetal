@@ -3,7 +3,8 @@ import Foundation
 
 /// A segment of place notation at some stage.
 public struct PlaceNotation: Sendable {
-  let stage: Stage
+  /// The stage this place notation is written at.
+  public let stage: Stage
   private let changes: [RawRow]
   
   internal init(stage: Stage, changes: [RawRow]) {

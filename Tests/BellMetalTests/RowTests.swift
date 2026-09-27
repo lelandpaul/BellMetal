@@ -221,4 +221,48 @@ struct RowTests {
     #expect(Row(stage: .minimus, row: t_raw.swapUp(from: 1)) == "1324")
     #expect(Row(stage: .minimus, row: t_raw.swapUp(from: 2)) == "1243")
   }
+
+  // MARK: Place bell orders
+
+  @Test("placeBellOrders gives the standard place bell order for Plain Bob leadheads")
+  func placeBellOrdersPlainBob() {
+    let minor: Row = "135264"
+    #expect(minor.placeBellOrders == [[1], [2, 4, 6, 5, 3]])
+    let major: Row = "13527486"
+    #expect(major.placeBellOrders == [[1], [2, 4, 6, 8, 7, 5, 3]])
+  }
+
+  @Test("placeBellOrders splits a multi-cycle leadhead, ordered by lowest place")
+  func placeBellOrdersMultiCycle() {
+    let row: Row = "13254"
+    #expect(row.placeBellOrders == [[1], [2, 3], [4, 5]])
+    let rotated: Row = "14523"
+    #expect(rotated.placeBellOrders == [[1], [2, 4], [3, 5]])
+  }
+
+  @Test("placeBellOrders leaves every bell of rounds on its own")
+  func placeBellOrdersRounds() {
+    #expect(Stage.major.rounds.placeBellOrders == (1 ... 8).map { [$0] })
+  }
+
+  @Test("placeBellOrders handles the maximum stage")
+  func placeBellOrdersSixteen() {
+    let row: Row = "2143658709TEBADC"
+    #expect(row.placeBellOrders == stride(from: 1, to: 16, by: 2).map { [$0, $0 + 1] })
+  }
+
+  @Test("Each step of every place bell order is the place the leadhead moves that bell to")
+  func placeBellOrdersFollowTheBell() throws {
+    for notation in ["-36-14-12-36-14-56,12", "-38-14-1258-36-14-58-16-78,12", "3,1.5.1.5.1", "3.1.7.3.1.3,1"] {
+      let leadhead = try PlaceNotation(string: notation).leadhead
+      let orders = leadhead.placeBellOrders
+      #expect(orders.flatMap { $0 }.sorted() == Array(1 ... leadhead.stage.count))
+      for order in orders {
+        #expect(order.first == order.min())
+        for (place, next) in zip(order, order.dropFirst() + [order[0]]) {
+          #expect(leadhead[Bell(rawValue: UInt8(place - 1))!] == next)
+        }
+      }
+    }
+  }
 }
