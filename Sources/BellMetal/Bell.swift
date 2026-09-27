@@ -81,6 +81,26 @@ extension Bell {
   }
 }
 
+extension Bell {
+  /// Creates the bell numbered `number`, counting from 1 (e.g. 12 for `.bT`),
+  /// if `stage` has it. Returns nil otherwise, including for 0 and negative numbers.
+  public init?(number: Int, on stage: Stage) {
+    guard (1...stage.count).contains(number) else { return nil }
+    self.init(rawValue: UInt8(number - 1))
+  }
+
+  /// Creates the bell numbered `number`, counting from 1 (e.g. 12 for `.bT`),
+  /// if any stage has it (1...16). Returns nil otherwise.
+  public init?(number: Int) {
+    self.init(number: number, on: .sixteen)
+  }
+
+  /// This bell's number, counting from 1 (e.g. 12 for `.bT`).
+  public var number: Int {
+    Int(rawValue) + 1
+  }
+}
+
 extension Bell: Comparable {
   /// Bells are ordered from lightest (treble) to heaviest (tenor).
   public static func < (lhs: Bell, rhs: Bell) -> Bool {

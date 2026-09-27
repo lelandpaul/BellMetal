@@ -241,7 +241,7 @@ extension Row {
   /// matching the convention used by Bell's string/character initializers.
   init(_ row: [Int]) {
     self.init(row.map { value -> Bell in
-      guard let bell = Bell(rawValue: UInt8(value - 1)) else {
+      guard let bell = Bell(number: value) else {
         fatalError("Invalid bell number: \(value)")
       }
       return bell
