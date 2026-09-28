@@ -80,6 +80,20 @@ struct MusicTypeTests {
     // No combo masks are defined for Doubles or Minor.
     #expect(MusicType.scoreNamedRowCombos(Block("12345")) == 0)
     #expect(MusicType.scoreNamedRowCombos(Block("123456")) == 0)
+    #expect(MusicType.scoreNamedRowCombos(Block("123456789A0BECTD")) == 1) // xxxxxxxxxAxBxCxD on Sixteen
+  }
+
+  @Test("Every named combo mask is the stage it's listed under")
+  func namedComboMaskStages() {
+    // Caters is skipped, not just expected to fail: three of its masks are
+    // 8 characters long, and "xxxxx987" isn't a valid 8-bell mask, so even
+    // building the list traps. Intended patterns still to be confirmed.
+    for count in 1...Stage.maxCount where count != Stage.caters.count {
+      let stage = Stage(count)
+      for mask in MusicType.namedComboMasks(at: stage) {
+        #expect(mask.stage == stage, "\(mask) listed under \(stage)")
+      }
+    }
   }
 
   @Test("scoreTenorsReversed only counts the backstroke row by default, unless backstrokeStart is flipped")
