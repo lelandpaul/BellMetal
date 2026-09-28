@@ -1,132 +1,313 @@
-# Design note: supporting stages above 16
+# Design: supporting stages above 16
 
-Status: **not started — notes only, captured for future reference.**
+Status: **design agreed (2026-09-28); implementation not started.** Work happens on
+`feature/extended-stages`, branched from `develop`.
 
-## Motivation
+This replaces the earlier notes-only version of this document. That version kept the public API
+unchanged by adding a separate public `BigRow`. That approach is dropped: callers would have to know
+which storage a row uses, which is exactly what this design rules out.
 
-- Ringing Room currently supports up to 18 bells.
-- Future projects want headroom up to the limit of currently named methods (22), plus a little margin.
-- BellMetal's row representation is currently hard-capped at 16 bells.
+## Goals
 
-## Why the cap exists
+1. **Raise the stage cap from 16 to 24.** Ringing Room supports 18 bells today, and the largest stage
+   with named methods is 22. 24 covers both with some margin.
+2. **Callers can't tell which storage is in use.** Outside BellMetal, a 20-bell `Row`, `Block` or
+   `PlaceNotation` is the same type, with the same API and behaviour, as an 8-bell one. No second
+   public type, no generic parameter, no protocol existential.
+3. **Keep the fast `UInt64` path for stages up to 16.** Rows of 16 bells or fewer keep today's
+   4-bit-per-bell packing in a single `UInt64`, and collections of them keep today's raw
+   `[UInt64]`/`Set<UInt64>` storage. Nearly all real use falls here.
+4. **Changing the public API is allowed** when needed to meet goal 2. Changes are listed below
+   and should break as little as possible.
 
-`RawRow` (`Sources/BellMetal/RawRow.swift:3`) is a `UInt64` packing one bell number per **4-bit nibble**
-(`rawBell(at:)`, `RawRow.swift:12-14`). A nibble holds values 0–15, and 64 bits / 4 bits = 16 fields — so
-the cap comes from **both** the per-bell field width (4 bits) **and** the word width (64 bits) together, not
-either alone.
+## Why the cap exists today
 
-Important consequence: naively swapping the storage type from `UInt64` to `UInt128` while keeping 4-bit
-nibbles does **nothing** for the stage limit — a nibble still only holds 0–15. To actually raise the limit,
-the per-bell field must widen (e.g. to 5 bits, for bell values 0–31), and the *word* must also widen to
-avoid losing capacity: 5-bit fields in a 64-bit word only fit 12 bells (worse than today); 5-bit fields in a
-128-bit word fit 25 bells, comfortably covering the 22-bell target with headroom.
+`RawRow` (`Sources/BellMetal/RawRow.swift`) is a `UInt64` holding one bell per 4-bit field. A 4-bit field
+only holds values 0–15, and a 64-bit word only fits 16 of them. Both limits have to go: 24 bells need
+5-bit fields (values 0–31) and 120 bits of storage.
 
-## Where the bit-width assumptions live (blast radius)
+## Design overview
 
-`RawRow` is `internal`-only — it never appears in a public signature (confirmed via search: `Row.swift:8`,
-`Block.swift:9-10`, `PlaceNotation.swift:7` all hold it privately) — so this is a contained internal
-refactor, not a public API break by itself. Files touched:
+The storage choice depends on the stage, and it happens at runtime:
 
-1. **`RawRow.swift`** — the core. All bit-width-derived constants live here:
-   - `rawBell(at:)` (`:12-14`) — nibble extraction via `(self >> (4 * position)) & 0xF`.
-   - `rawPosition(of:)` (`:18-27`) and `fixedBells` (`:66-70`) — loop hardcoded to `0..<16`.
-   - `composePermutation(_:rawStage:)` (`:31-42`) — the row-multiplication hot path; shifts a new nibble
-     in at bit **60** and right-justifies by `4*(14 - rawStage)`. Both `60` and `14` are artifacts of
-     "64 bits, 16 nibbles, 0-indexed" and need re-deriving for any other field/word width.
-   - `extend(from:to:)` (`:47-49`) — mask via `UInt64.max << (4 * (from.rawValue + 1))`.
-   - `swapUp(from:)` (`:53-63`) — nibble-swap mask `0xF << (4 * rawPos)`.
-2. **`Row.swift:177-186`** (`invert()`) — duplicates the same shift-and-right-justify logic inline instead
-   of reusing `composePermutation`; needs the identical fix in a second place.
-3. **`Stage.swift`** — currently a `UInt8`-backed enum with exactly 16 named cases (`.one`...`.sixteen`,
-   `:4-21`) and a hardcoded `1...16` precondition (`:26-29`). Bell-ringing has no traditional names for
-   stages above 16, so exhaustively naming more cases doesn't make sense here — worth reconsidering as a
-   validated integer wrapper instead of an exhaustive enum, if/when this is implemented. Also check whether
-   `Stage` is public API before deciding.
-4. **`Row.init(validating:)`** (`Row.swift:57-60`) — same `1...16` precondition, needs updating in step
-   with `Stage`.
-5. No bit-scanning tricks (`leadingZeroBitCount`/`trailingZeroBitCount`/popcount) exist anywhere in
-   `Sources/` — confirmed by search — so there's nothing beyond fixed shift/mask arithmetic to worry about
-   at a wider word size.
+- **Narrow** (stage 1–16): a `UInt64` with 4-bit fields. This is the current `RawRow` and its
+  existing code, unchanged.
+- **Wide** (stage 17–24): two `UInt64` words with 5-bit fields, 12 fields per word, so no field
+  crosses a word boundary and no `UInt128` arithmetic is needed.
 
-## Chosen direction: generic storage, kept behind concrete public types
+`Stage` decides the storage. Two stages share storage exactly when they're both narrow or both wide,
+and every operation that combines two values already requires the same stage. So mixed-storage
+arithmetic can't happen. The only place the two layouts meet is extending across the 16/17 boundary
+(see "Crossing the 16/17 boundary").
 
-Rather than moving everything to a wider word (which would tax the ≤16-bell case — 99%+ of real usage —
-with `UInt128`'s emulated, non-native arithmetic on every row multiply), make the underlying storage
-generic and expose two concrete public types:
+Dispatch happens once per value for `Row`, and once per collection for `Block` and `PlaceNotation`.
+It never happens per element inside a loop.
 
-- `Row` — stays `UInt64`-backed, for stage ≤ 16 (the fast, native-word path, unchanged from today).
-- `BigRow` — `UInt128`-backed, for stage > 16 up to whatever the wider field width supports (~25 bells at
-  5 bits/field).
+## Internal engine
 
-Explicitly out of scope: a homogeneous collection over rows of *different* stages. Not needed for any known
-use case, so no type-erasure story is required — this sidesteps the sharpest risk in the design space
-(protocol existentials reintroducing witness-table dispatch and potential heap allocation).
+### `RawPermutation` protocol (internal)
 
-### API shape: two options considered
+A small internal protocol holding the bit-packing operations `RawRow` has today. It has two
+conforming types:
 
-**Option A — typealiases of a generic type:**
 ```swift
-public struct GenericRow<Storage: FixedWidthInteger & UnsignedInteger> { ... }
-public typealias Row = GenericRow<UInt64>
-public typealias BigRow = GenericRow<UInt128>
-```
-Least code (single implementation, `Storage`-specific members via constrained extensions). Drawback: Swift
-requires a public typealias's underlying type to be at least as visible as the typealias, so `GenericRow`
-must itself be `public` — leaking it as an alternate (unintended) public spelling of `Row`/`BigRow`, and
-technically permitting `GenericRow<AnyOtherUnsignedFixedWidthInteger>` instantiations the bit-math was never
-designed for.
-
-**Option B — concrete wrapper structs over an internal generic engine (preferred):**
-```swift
-internal struct RawStorage<Storage: FixedWidthInteger & UnsignedInteger> { ... } // stays internal
-public struct Row {
-    private let raw: RawStorage<UInt64>
-    // public methods forward to `raw`
-}
-public struct BigRow {
-    private let raw: RawStorage<UInt128>
-    // same forwarding methods
+internal protocol RawPermutation: Hashable, Sendable {
+  func rawBell(at position: UInt8) -> UInt8
+  func rawPosition(of bell: UInt8) -> UInt8?
+  static func build(rawStage: UInt8, value: (UInt8) -> UInt8) -> Self
+  func composePermutation(_ other: Self, rawStage: UInt8) -> Self
+  func extend(from: Stage, to: Stage) -> Self
+  func swapUp(from rawPos: UInt8) -> Self
+  var fixedBells: [UInt8] { get }
+  static func rounds(rawStage: UInt8) -> Self
 }
 ```
-Keeps `Row`/`BigRow` as plain, non-generic structs — matches "the current API" exactly, with the generic
-engine never exposed. Cost: mechanical one-line forwarding per public method. `Equatable`/`Hashable` are
-synthesized for free since each wrapper has exactly one stored, already-conforming property.
 
-**Decision: Option B**, specifically because it preserves the current public API shape (no generic type
-name ever visible to consumers) at a boilerplate cost the optimizer erases (see below).
+- **`UInt64`**: the existing `RawRow` extension, renamed and otherwise untouched. The narrow hot path
+  keeps exactly today's code.
+- **`WideRawRow`**: a new internal `struct WideRawRow: Hashable, Sendable { var lo: UInt64; var hi: UInt64 }`.
+  - Positions 0–11 live in `lo`, positions 12–23 in `hi`, each at bit `5 * (p % 12)`.
+  - The top 4 bits of each word are always zero.
+  - Field width, field mask and fields per word are `static let` constants, so they fold to
+    constants in optimised builds.
 
-## Performance of the genericity itself
+The field-count limits live on the conforming types. The hardcoded `0..<16` loops in `rawPosition(of:)`
+and `fixedBells` become per-type constants.
 
-Net assessment: **no expected runtime cost for `Row` (`UInt64`) in release builds**, conditional on a few
-things holding:
+Code shared between the two layouts (pricking, leadheads, change-to-string, truth checks, transposition)
+is written once as a generic function over `R: RawPermutation`. It's internal to the module, so the
+optimiser specialises it for each concrete type. No generic ever crosses the module boundary: every
+public entry point is a concrete method that switches, then calls a concrete version.
 
-- `Package.swift` does **not** set `-enable-library-evolution` (confirmed — it doesn't). Without library
-  evolution, Swift's cross-module optimization (default for `-O` builds) specializes generic calls across
-  module boundaries, not just within BellMetal itself.
-- `FixedWidthInteger & UnsignedInteger`-constrained generics over stdlib integer types is the most
-  well-optimized pattern in the language — it's how the standard library's own generic numeric code
-  achieves performance, and `UInt64`/`UInt128`'s protocol-conformance implementations are `@inlinable` for
-  this reason.
-- Bit-width-derived "constants" (nibble width, field count, etc.) must be expressed as genuine
-  `static`/associated constants per `Storage`-conforming type, not values recomputed at runtime — otherwise
-  they don't constant-fold away under specialization and reintroduce a small avoidable per-call cost.
-- Option B's forwarding layer (`Row.method()` → `raw.method()`) is, if anything, an *easier* case for the
-  inliner than Option A's generic-typealias approach: by the time you're at `Row`, there's no generic
-  parameter left in play at all — it's a concrete struct forwarding to a method on a concrete stored field.
+### `Row`: 16 bytes, stage packed into unused bits
 
-Caveats worth remembering, none of which block the approach:
-- **Debug builds do not specialize** (`-Onone` always uses witness-table dispatch for generics) — expect
-  debug-mode benchmarks to look worse than today; this doesn't affect shipped release performance.
-- Specialization is a compiler heuristic, not a guarantee — **benchmark `Row` against today's baseline
-  once implemented**, rather than assuming.
-- Binary size grows with each concrete `Storage` instantiation actually used (negligible for a library this
-  size, but it's the honest "cost" side of specialization — code size for speed).
+```swift
+public struct Row: Equatable, Hashable, Sendable {
+  internal let lo: UInt64
+  internal let hi: UInt64
+}
+```
 
-## Open questions for when this is picked up
+| | `lo` | `hi` |
+|---|---|---|
+| Narrow (stage 1–16) | today's `RawRow`, 16 × 4-bit | bit 63 = 0; bits 0–3 = `stage.rawValue` (0–15); all other bits 0 |
+| Wide (stage 17–24) | `WideRawRow.lo`, positions 0–11 | bit 63 = 1; bits 60–62 = `stage.rawValue - 16` (0–7); bits 0–59 = `WideRawRow.hi` |
 
-- Exact field width for `BigRow` (5 bits comfortably covers 22 bells with headroom to 25; confirm against
-  the actual target ceiling before committing).
-- Whether `Stage` should become a validated integer wrapper rather than an exhaustive named-case enum, and
-  whether that's a breaking change for existing public API consumers.
-- Whether `Bell` needs the same treatment as `Stage` (currently presumably capped in step with the 16-bell
-  assumption).
+- `stage` is read from `hi`: if bit 63 is clear, `hi` is the raw stage; otherwise it's
+  `16 + (hi >> 60) & 0b111`. `isWide` is `hi >> 63 != 0`, a single test.
+- **Unused bits must always be zero.** This makes the synthesized `Equatable`/`Hashable` correct.
+  Only internal initialisers build a `Row` (`init(stage:narrow:)`, `init(stage:wide:)`), and they
+  enforce this.
+- Size and copy behaviour are unchanged: `MemoryLayout<Row>.stride == 16` (as today:
+  `Stage` + padding + `UInt64`), and `Row` is still plain bitwise-copyable (no reference counting). A
+  test asserts both.
+- The internal accessors `narrow: UInt64` and `wide: WideRawRow` hand a row's raw contents to
+  `Block` and `PlaceNotation`, and assert the layout in debug builds.
+
+**Why the stage is encoded unevenly:** the wide layout's 12-fields-per-word split leaves 4 spare bits in
+each word, not a spare byte. A wide stage therefore needs a tag bit plus a 3-bit offset. The
+awkwardness is confined to the `stage` getter and the two initialisers. The alternative, a single
+`UInt128` with 5-bit fields and the stage in the top byte, has a cleaner stage byte but a field that
+crosses the 64-bit halves and 16-byte alignment. It's recorded here as the fallback if the two-word
+layout proves awkward.
+
+Each public `Row` operation checks `isWide` once and calls the matching version (`UInt64` or
+`WideRawRow`). For stages up to 16 the only added cost is that single, predictable branch.
+
+### Collections: dispatch once per collection
+
+```swift
+internal struct RawBlock<R: RawPermutation>: Sendable {
+  var rows: [R]
+  var rowSet: Set<R>
+}
+
+public struct Block: Sendable {
+  public let stage: Stage
+  internal let storage: Storage
+  internal enum Storage: Sendable {
+    case narrow(RawBlock<UInt64>)
+    case wide(RawBlock<WideRawRow>)
+  }
+}
+```
+
+`PlaceNotation` follows the same pattern: `enum Changes { case narrow([UInt64]), wide([WideRawRow]) }`.
+
+A narrow `Block` or `PlaceNotation` holds byte-for-byte what it holds today. Bulk operations switch
+once, then run the generic version specialised for that layout:
+- `prick`, `leadhead`, `description`
+- `isTrue`, `isTrue(against:)`, `transpose(by:)`, `groupByStroke`
+- `concatenate`, `extend`, `covered(at:)`, `replacing`, `slice`
+
+`Row` values are only created at the boundary: subscripts, `first`/`last`, iteration.
+
+### Crossing the 16/17 boundary
+
+`Row.extend(to:)`, `Block.extend(to:)` and `PlaceNotation.covered(at:)` from a narrow stage to a wide
+one convert the 4-bit layout to the 5-bit layout. `WideRawRow(widening: UInt64, from: Stage, to: Stage)`
+reads each field and writes it into the wide layout, filling the new positions with the extra bells in
+their home positions. This is the only code where the two layouts meet. It's rare and one-way (there's
+no narrowing), and it gets dedicated tests.
+
+## Public types: `Stage` and `Bell`
+
+Both change from enums to structs over a `UInt8`, capped at 24. They still conform to
+`RawRepresentable`, so `rawValue` (zero-based) and `init?(rawValue:)` keep their current meaning and
+spelling. RRTower relies on `bell.rawValue`, and existing code in the other packages uses
+`Bell(rawValue:)` and the `.bX` constants.
+
+### `Stage`
+
+```swift
+public struct Stage: RawRepresentable, Hashable, Comparable, Sendable, Codable {
+  public let rawValue: UInt8          // count - 1, 0...23
+  public init?(rawValue: UInt8)       // nil if > 23
+  public init(_ count: Int)           // precondition 1...24
+  public static let maxCount = 24
+
+  public static let one, two, singles, minimus, doubles, minor, triples, major,
+                    caters, royal, cinques, maximus, thirteen, fourteen, fifteen, sixteen,
+                    seventeen, eighteen, nineteen, twenty,
+                    twentyOne, twentyTwo, twentyThree, twentyFour
+}
+```
+
+- `.major`-style constants keep compiling at every existing use.
+- `switch stage { case .major: … }` still compiles, matching each value with `==`. Exhaustive switches
+  no longer do. BellMetal's own switches (`NamedRows`, `Stage.description`) get a `default`, or are
+  replaced by lookup tables.
+- `description` extends the existing number words: "Seventeen" … "Twenty-Four".
+- `rounds` is currently a switch over string literals that parses a string on every call. It's
+  replaced by arithmetic: the constant `0xFEDC_BA98_7654_3210` masked to the stage's length for narrow
+  stages, and the equivalent build for wide ones (see "Benchmarking").
+- `Codable` still encodes the bell count; the valid decode range becomes 1…24.
+
+### `Bell`
+
+```swift
+public struct Bell: RawRepresentable, Hashable, Comparable, Sendable, Codable {
+  public let rawValue: UInt8          // 0...23
+  public static let b1, b2, …, b9, b0, bE, bT, bA, bB, bC, bD,
+                    bF, bG, bH, bJ, bK, bL, bM, bN
+}
+```
+
+- **Bell symbols** for 1–24 are `1234567890ETABCDFGHJKLMN`, one string used by
+  `description`, `init?(character:)`, the place-notation parser (`interpretPlace`/`representPlace`,
+  the tokenising pattern's character class, stage prefixes such as `N:`) and the DocC
+  `PlaceNotationSyntax` article.
+- `Bell(number:)` accepts 1…24. `Codable` still encodes the symbol character.
+
+## Public API changes (summary)
+
+Source-breaking only where noted. Recommend releasing as **2.0.0**.
+
+| Change | Breaks existing code? |
+|---|---|
+| `Stage` enum → struct with the same constants | Only exhaustive `switch`es. None found in RRMethods, RRTower, ComplibKit or RRNext. |
+| `Bell` enum → struct with the same constants | Same. |
+| New constants: `Stage.seventeen` … `.twentyFour`, `Stage.maxCount`, `Bell.bF` … `.bN` | No |
+| Stage- and place-related ranges widen from 1…16 to 1…24 (`Stage.init`, `Row.init(validating:)`, `Bell(number:)`, `representPlace`, decoders) | No: inputs that were previously rejected are now accepted. |
+| `Block.makeIterator()` returns a new `Block.Iterator` instead of `Array<Row>.Iterator` | Only for code that names the iterator type. |
+
+## Fixes in passing
+
+Existing bugs in code this work rewrites anyway. Each gets a test:
+
+- **`PlaceNotationParser.inferStage` rejects notation whose highest place is 16.** The check is
+  `maxPlace < 16`, so `x1D` can't infer Sixteen. The bound becomes "the resulting stage is
+  ≤ `Stage.maxCount`".
+- **`Mask(string:)` crashes instead of throwing on an over-long string.** `Stage(string.count)` is a
+  precondition. It should throw `.invalidMask`.
+- **`Block.makeIterator()` builds an eager `[Row]`.** The return type forces the non-lazy `map`, so
+  every iteration first allocates a full array. The new iterator is lazy.
+
+## Downstream follow-up (outside BellMetal)
+
+- **RRTower `BellSet`** (`RRTower/Sources/RRSimulator/BellSet.swift`) stores bells as bits in a `UInt16`
+  on the assumption that bells max out at 16. Swift's `<<` gives 0 when the shift is too large rather
+  than trapping, so for bells 17–24 `insert` silently does nothing and `contains` returns false. It
+  needs to become a `UInt32` (and its comment updated) before RRTower runs above 16 bells.
+- Before merging, build and test RRMethods, RRTower, ComplibKit and RRNext against the branch, and
+  search them for other 16-bell assumptions.
+
+## Plan
+
+Build out the full change first, then benchmark it against current `develop`. Tests pass at every step.
+
+1. **`Stage`/`Bell` → structs, cap still 16.** A pure refactor with no change in behaviour. Includes
+   arithmetic `rounds` and table-based `description`.
+2. **Internal engine.** Add the `RawPermutation` protocol, make `UInt64` conform (existing code), and
+   add `WideRawRow`. Unit-test both against a simple `[Int]`-based permutation reference
+   implementation.
+3. **`Row` two-word layout** with dispatch on `isWide`. Tests for layout (stride 16, bitwise-copyable)
+   and for the "unused bits are zero" rule.
+4. **`Block`/`PlaceNotation` per-collection storage** via generic `RawBlock<R>`/changes. Check
+   `Mask`, `RowTemplateIterator` and `Music` for remaining 16-bell assumptions.
+5. **Raise the cap to 24.** New constants and bell symbols; parser, `Codable` ranges and DocC updated.
+   Include the "Fixes in passing".
+6. **Tests at stages above 16.** Cross-check every stage 1–24 against the reference implementation:
+   multiply, invert, pow, `placeBellOrders`, subscripts. Extend across the 16/17 boundary. Prick
+   known methods at 18, 22 and 24 and check leadheads and plain-course lengths. Round-trip parsing,
+   `description` and `Codable`.
+7. **Downstream check.** Build and test RRMethods, RRTower, ComplibKit and RRNext against the
+   branch; raise the RRTower `BellSet` fix.
+8. **Benchmarks** (below): run against `develop` and the branch, report, and fix any regressions for
+   stages up to 16.
+9. **PR** `feature/extended-stages` → `develop`.
+
+## Benchmarking
+
+The comparison runs after the full change is built, against current `develop`.
+
+**Harness.** A separate SwiftPM package at `Benchmarks/` using `package-benchmark` (ordo-one).
+- It reports wall-clock and CPU time, malloc counts, and supports saving and comparing baselines.
+- The dependency lives only in the benchmark package, never in the library.
+- It depends on BellMetal by local path, so the **same benchmark source** runs against a worktree of
+  `develop` and against the branch. The exact switching mechanism is decided when the harness is
+  built; watch out for SwiftPM caching manifest evaluation if an environment variable is used.
+- Benchmarks up to 16 bells use only API that exists identically on both sides (`.major`,
+  `Row("…")`, `PlaceNotation("…")`, `Block`, …). Benchmarks above 16 bells are gated and built only
+  against the branch.
+- Always release builds. Per the global CLAUDE.md, `swift package` runs with `--disable-sandbox`.
+  Without jemalloc (`BENCHMARK_DISABLE_JEMALLOC=true`), malloc counts are lost.
+
+**Stages.** 6, 8, 12 and 16 on both sides (16 being the largest narrow stage). 17, 18, 22 and 24 on
+the branch only, as absolute numbers and relative to 16.
+
+**Operations.**
+- `Row`: construction from string and array, `*`, `invert`, `pow`, both subscripts, `description`,
+  `extend`, `placeBellOrders`, hashing and `Set` insertion.
+- `PlaceNotation`: parsing (with and without palindromes), `leadhead`, `description`, and pricking.
+  Pricking covers one lead, a plain course (Plain Bob, Cambridge Surprise at 8, 12 and 16), and
+  `.untilRound`/`.untilFalse`.
+- `Block`: `isTrue` and `isTrue(against:)` on large blocks (the Minor extent, a 5,000-row Major
+  block), `transpose`, `concatenate`, `extend`, iteration, `groupByStroke`,
+  `count(matchingAny:)`.
+- `Mask`: `matches`, `allMatchingRows`.
+- `MusicScheme`: scoring a long block.
+
+**Known confounders.** Three changes speed things up for reasons unrelated to storage:
+- `Stage.rounds`: string parse → arithmetic.
+- `Block` iteration: eager array → lazy.
+- `inferStage`: a correctness fix only.
+
+Benchmarks that touch them (anything that pricks from rounds by default, iterates a `Block`, or
+builds from rounds) will show gains that the storage change didn't cause. The report calls these out,
+and where practical includes a variant that avoids the confounded path.
+
+**Acceptance (proposed).**
+- No benchmark at 16 bells or fewer regresses beyond run-to-run noise. Anything with a median
+  regression above ~5% is investigated and fixed before the PR.
+- Benchmarks above 16 bells have no pass/fail threshold, but are reported.
+
+## Performance notes carried forward
+
+- `Package.swift` doesn't enable library evolution, so optimised builds can specialise across
+  modules. Under this design that barely matters: public entry points are concrete, and generics
+  stay internal to BellMetal.
+- Debug builds don't specialise generics. The shared generic code will be slower in debug builds than
+  today; only release numbers count.
+- Bit-width values must be `static let`s on each layout type, not computed at runtime, so they fold
+  to constants.
