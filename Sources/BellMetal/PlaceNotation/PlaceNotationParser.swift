@@ -230,7 +230,7 @@ extension PlaceNotationParser {
   }
   
   internal static func changeToRawRow(_ places: [Int], at stage: Stage) -> RawRow {
-    var change = stage.rounds.row
+    var change = stage.rounds.narrow
     var i = 0
     while i < stage.count - 1 {
       if places.contains(i+1) {

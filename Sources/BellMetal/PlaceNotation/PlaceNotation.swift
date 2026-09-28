@@ -217,7 +217,7 @@ extension PlaceNotation {
     let row = row ?? stage.rounds
     guard row.stage == self.stage else { throw BellMetalError.stageMismatch }
     
-    var rawRows = [row.row]
+    var rawRows = [row.narrow]
     var rawRowsSet = Set(rawRows)
     var repetitions: UInt = 0
     repeat {
@@ -255,7 +255,7 @@ extension PlaceNotation {
   public var leadhead: Row {
     Row(
       stage: stage,
-      row: changes.reduce(into: stage.rounds.row) { $0 = $0.composePermutation($1, rawStage: stage.rawValue) }
+      narrow: changes.reduce(into: stage.rounds.narrow) { $0 = $0.composePermutation($1, rawStage: stage.rawValue) }
     )
   }
 }

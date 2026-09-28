@@ -23,6 +23,14 @@ public struct Stage: RawRepresentable, Hashable, Sendable {
 
   /// The largest supported number of bells.
   public static let maxCount = 16
+
+  /// The largest number of bells stored in the narrow (`RawRow`) layout.
+  internal static let narrowMaxCount: UInt8 = 16
+
+  /// Whether rows at this stage use the wide (`WideRawRow`) layout.
+  internal var usesWideLayout: Bool {
+    rawValue >= Stage.narrowMaxCount
+  }
 }
 
 extension Stage {
@@ -88,7 +96,9 @@ extension Stage {
 
   /// Rounds on this stage, e.g. "12345678" on Major.
   public var rounds: Row {
-    Row(stage: self, row: RawRow.rounds(rawStage: rawValue))
+    usesWideLayout
+      ? Row(stage: self, wide: .rounds(rawStage: rawValue))
+      : Row(stage: self, narrow: .rounds(rawStage: rawValue))
   }
 }
 

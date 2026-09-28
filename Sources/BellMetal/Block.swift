@@ -23,7 +23,7 @@ public struct Block: Sendable {
     precondition(!rows.isEmpty, "Cannot create empty Block.")
     precondition(Set(rows.map(\.stage)).count == 1, "Inconsistent Stages: \(rows)")
     self.stage = rows[0].stage
-    self.rows = rows.map(\.row)
+    self.rows = rows.map(\.narrow)
     self.rowSet = Set(self.rows)
   }
 }
@@ -38,14 +38,14 @@ extension Block: ExpressibleByArrayLiteral {
 extension Block: CustomStringConvertible {
   /// A description listing every row in the block, in order.
   public var description: String {
-    let rows = self.rows.map { Row(stage: self.stage, row: $0) }
+    let rows = self.rows.map { Row(stage: self.stage, narrow: $0) }
     return "Block(\(rows)"
   }
 }
 
 extension Block: Sequence {
   public func makeIterator() -> Array<Row>.Iterator {
-    return self.rows.lazy.map({ Row(stage: self.stage, row: $0) }).makeIterator()
+    return self.rows.lazy.map({ Row(stage: self.stage, narrow: $0) }).makeIterator()
   }
 }
 
@@ -88,7 +88,7 @@ extension Block: Codable {
 extension Block {
   /// The row at the given (0-indexed) position in the block.
   public subscript(_ index: Int) -> Row {
-    Row(stage: self.stage, row: self.rows[index])
+    Row(stage: self.stage, narrow: self.rows[index])
   }
 }
 
@@ -100,11 +100,11 @@ extension Block {
   public var uniqueCount: Int { rowSet.count }
   /// The first row in the block. A block can never be empty.
   public var first: Row {
-    Row.init(stage: stage, row: rows.first!) // Safe: Not possible to construct empty Block
+    Row.init(stage: stage, narrow: rows.first!) // Safe: Not possible to construct empty Block
   }
   /// The last row in the block. A block can never be empty.
   public var last: Row {
-    Row.init(stage: stage, row: rows.last!) // Safe: Not possible to construct empty Block
+    Row.init(stage: stage, narrow: rows.last!) // Safe: Not possible to construct empty Block
   }
   
   /// Separates the rows into two blocks by stroke parity.
@@ -161,7 +161,7 @@ extension Block {
     guard new.stage == self.stage else {
       throw BellMetalError.stageMismatch
     }
-    let newRows = self.rows.map { new.row.composePermutation($0, rawStage: new.stage.rawValue) }
+    let newRows = self.rows.map { new.narrow.composePermutation($0, rawStage: new.stage.rawValue) }
     return Block(stage: self.stage, rows: newRows, rowSet: Set(newRows))
   }
   

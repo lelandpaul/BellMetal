@@ -3,13 +3,71 @@ import Foundation
 /// A representation of an individual row, i.e. an arbitrary permutation
 /// on some number of bells.
 public struct Row: Equatable, Hashable, Sendable {
+  // Two words, whose layout depends on the stage:
+  // - Up to 16 bells: `lo` is the row as a `RawRow`. `hi` is the stage's
+  //   raw value (0-15), with bit 63 clear.
+  // - 17 to 24 bells: `lo` and `hi` are the row as a `WideRawRow`, with
+  //   the stage packed into `hi`'s top 4 bits (which `WideRawRow` leaves
+  //   0): bit 63 set, bits 60-62 the stage's raw value minus 16.
+  // Every unused bit is 0, so the synthesized Equatable and Hashable
+  // compare rows correctly.
+  private let lo: UInt64
+  private let hi: UInt64
+
+  private static let wideFlag: UInt64 = 1 << 63
+  private static let wideStageShift: UInt64 = 60
+  private static let wideRowMask: UInt64 = (1 << 60) - 1
+
+  /// A row of 16 bells or fewer.
+  internal init(stage: Stage, narrow: RawRow) {
+    assert(!stage.usesWideLayout, "Narrow row with wide stage \(stage)")
+    self.lo = narrow
+    self.hi = UInt64(stage.rawValue)
+  }
+
+  /// A row of 17 to 24 bells.
+  internal init(stage: Stage, wide: WideRawRow) {
+    assert(stage.usesWideLayout, "Wide row with narrow stage \(stage)")
+    self.lo = wide.lo
+    self.hi = wide.hi
+      | Row.wideFlag
+      | UInt64(stage.rawValue - Stage.narrowMaxCount) << Row.wideStageShift
+  }
+
+  /// Whether this row uses the wide layout, i.e. has more than 16 bells.
+  internal var isWide: Bool {
+    hi & Row.wideFlag != 0
+  }
+
   /// The stage (number of bells) this row belongs to.
-  public let stage: Stage
-  internal let row: RawRow
-  
-  internal init(stage: Stage, row: RawRow) {
-    self.stage = stage
-    self.row = row
+  public var stage: Stage {
+    if isWide {
+      let offset = UInt8(truncatingIfNeeded: (hi & ~Row.wideFlag) >> Row.wideStageShift)
+      return Stage(uncheckedRawValue: UInt8(Stage.narrowMaxCount) + offset)
+    }
+    return Stage(uncheckedRawValue: UInt8(truncatingIfNeeded: hi))
+  }
+
+  /// The row's bells, for a row of 16 bells or fewer.
+  internal var narrow: RawRow {
+    assert(!isWide, "Narrow access to a wide row")
+    return lo
+  }
+
+  /// The row's bells, for a row of 17 to 24 bells.
+  internal var wide: WideRawRow {
+    assert(isWide, "Wide access to a narrow row")
+    return WideRawRow(lo: lo, hi: hi & Row.wideRowMask)
+  }
+
+  /// The raw bell at a zero-indexed position, in either layout.
+  internal func rawBell(at position: UInt8) -> UInt8 {
+    isWide ? wide.rawBell(at: position) : narrow.rawBell(at: position)
+  }
+
+  /// The zero-indexed position of a raw bell, in either layout.
+  internal func rawPosition(of bell: UInt8) -> UInt8? {
+    isWide ? wide.rawPosition(of: bell) : narrow.rawPosition(of: bell)
   }
 }
 
@@ -52,10 +110,11 @@ extension Row: ExpressibleByStringLiteral {
 
 extension Row {
   /// Safe, throwing construction from an array of Bells. Throws `.invalidBell`
-  /// if the array isn't a valid permutation: wrong length (must be 1...16),
-  /// a duplicate bell, or a bell outside the range implied by the array's length.
+  /// if the array isn't a valid permutation: wrong length (must be
+  /// 1...`Stage.maxCount`), a duplicate bell, or a bell outside the range
+  /// implied by the array's length.
   public init(validating array: [Bell]) throws {
-    guard array.count >= 1 && array.count <= 16 else {
+    guard array.count >= 1 && array.count <= Stage.maxCount else {
       throw BellMetalError.invalidBell
     }
     let stage = Stage(array.count)
@@ -65,11 +124,11 @@ extension Row {
     else {
       throw BellMetalError.invalidBell
     }
-    var row = RawRow.zero
-    for (i, b) in array.enumerated() {
-      row |= RawRow(b.rawValue) << (4 * i)
+    if stage.usesWideLayout {
+      self.init(stage: stage, wide: .build(rawStage: stage.rawValue) { array[Int($0)].rawValue })
+    } else {
+      self.init(stage: stage, narrow: .build(rawStage: stage.rawValue) { array[Int($0)].rawValue })
     }
-    self.init(stage: stage, row: row)
   }
 
   /// Safe, throwing construction from a string representation, e.g. "1234".
@@ -91,14 +150,7 @@ extension Row {
 extension Row: CustomStringConvertible {
   /// The string representation of this row, e.g. "14235".
   public var description: String {
-    var result: [String] = []
-    var row = self.row
-    for _ in 0..<Int(self.stage.count) {
-      let bell = Bell(uncheckedRawValue: UInt8(row & 0xF)) // Safe: Checked when row was created
-      result.append(bell.description)
-      row >>= 4
-    }
-    return result.joined()
+    String((0...stage.rawValue).map { Bell.symbols[Int(rawBell(at: $0))] })
   }
 }
 
@@ -137,15 +189,14 @@ extension Row {
   /// Retrieve the Bell at a given 1-indexed position.
   public subscript(_ position: Int) -> Bell {
     precondition(position > 0 && position <= self.stage.count, "Invalid position for row of stage \(stage): \(position)")
-    let raw = self.row.rawBell(at: UInt8(position - 1))
-    return Bell(uncheckedRawValue: raw) // Safe: Checked when row is built
+    return Bell(uncheckedRawValue: rawBell(at: UInt8(position - 1))) // Safe: Checked when row is built
   }
   
   
   /// Retrieve the 1-indexed position of a bell in the row.
   public subscript(bell: Bell) -> Int {
     precondition(self.stage.includes(bell), "Invalid bell for stage \(self.stage): \(bell)")
-    guard let rawPosition = self.row.rawPosition(of: bell.rawValue) else {
+    guard let rawPosition = self.rawPosition(of: bell.rawValue) else {
       fatalError("Tried to find a bell in an invalid row: \(self), \(bell)")
     }
     return Int(rawPosition) + 1
@@ -160,7 +211,11 @@ extension Row {
     guard self.stage == other.stage else {
       throw BellMetalError.stageMismatch
     }
-    return Self.init(stage: self.stage, row: self.row.composePermutation(other.row, rawStage: stage.rawValue))
+    let stage = self.stage
+    if isWide {
+      return Row(stage: stage, wide: wide.composePermutation(other.wide, rawStage: stage.rawValue))
+    }
+    return Row(stage: stage, narrow: narrow.composePermutation(other.narrow, rawStage: stage.rawValue))
   }
   
   /// Unsafe, non-throwing multiplication.
@@ -175,10 +230,13 @@ extension Row {
   /// Get the inverse row, i.e. the row such that
   /// x.multiply(by: x.invert) == stage.rounds
   public func invert() -> Row {
-    let newRow = RawRow.build(rawStage: stage.rawValue) { i in
-      self.row.rawPosition(of: i)!
+    let stage = self.stage
+    if isWide {
+      let wide = self.wide
+      return Row(stage: stage, wide: .build(rawStage: stage.rawValue) { wide.rawPosition(of: $0)! })
     }
-    return Self.init(stage: stage, row: newRow)
+    let narrow = self.narrow
+    return Row(stage: stage, narrow: .build(rawStage: stage.rawValue) { narrow.rawPosition(of: $0)! })
   }
   
   /// Multiply repeatedly.
@@ -232,7 +290,14 @@ extension Row {
     guard self.stage < newStage else {
       throw BellMetalError.invalidStage
     }
-    return Row(stage: newStage, row: self.row.extend(from: self.stage, to: newStage))
+    switch (isWide, newStage.usesWideLayout) {
+    case (false, false):
+      return Row(stage: newStage, narrow: narrow.extend(from: stage, to: newStage))
+    case (false, true):
+      return Row(stage: newStage, wide: WideRawRow(widening: narrow, from: stage, to: newStage))
+    case (true, _):
+      return Row(stage: newStage, wide: wide.extend(from: stage, to: newStage))
+    }
   }
 }
 
@@ -276,7 +341,7 @@ extension Row {
       repeat {
         seen[place] = true
         order.append(place + 1)
-        place = Int(row.rawPosition(of: UInt8(place))!) // Safe: every bell of the stage is present
+        place = Int(rawPosition(of: UInt8(place))!) // Safe: every bell of the stage is present
       } while place != start
       orders.append(order)
     }

@@ -157,32 +157,32 @@ struct PnParsingTests {
     let expectedX: Row = "21436587"
     let expected14: Row = "1324"
     let expected3: Row = "21354"
-    #expect(PNP.changeToRawRow([], at: .major) == expectedX.row)
-    #expect(PNP.changeToRawRow([1,4], at: .minimus) == expected14.row)
-    #expect(PNP.changeToRawRow([3], at: .doubles) == expected3.row)
+    #expect(PNP.changeToRawRow([], at: .major) == expectedX.narrow)
+    #expect(PNP.changeToRawRow([1,4], at: .minimus) == expected14.narrow)
+    #expect(PNP.changeToRawRow([3], at: .doubles) == expected3.narrow)
   }
   
   @Test("parseAllChanges parses a full notation string into its sequence of rows")
   func parseAllChanges() throws {
     let pb4 = "x4x4,2"
     let pb4_changes: [Row] = ["2143", "1324", "2143", "1324", "2143", "1324", "2143", "1243"]
-    #expect(try PNP.parseAllChanges(pb4).1 == pb4_changes.map(\.row))
+    #expect(try PNP.parseAllChanges(pb4).1 == pb4_changes.map(\.narrow))
     
     let g5 = "3,1.5.1.5.1"
     let g5_changes: [Row] = ["21354", "13254", "21435", "13254", "21435", "13254", "21435", "13254", "21435", "13254"]
-    #expect(try PNP.parseAllChanges(g5).1 == g5_changes.map(\.row))
+    #expect(try PNP.parseAllChanges(g5).1 == g5_changes.map(\.narrow))
   }
   
   @Test("PlaceNotation(string:) parses plain bob minimus and grandsire doubles correctly")
   func parsePN() throws {
     let pb4 = "x4x4,2"
     let pb4_changes: [Row] = ["2143", "1324", "2143", "1324", "2143", "1324", "2143", "1243"]
-    let expectedPb4 = PlaceNotation(stage: .minimus, changes: pb4_changes.map(\.row))
+    let expectedPb4 = PlaceNotation(stage: .minimus, changes: pb4_changes.map(\.narrow))
     #expect(try PlaceNotation(string: pb4) == expectedPb4)
 
     let g5 = "3,1.5.1.5.1"
     let g5_changes: [Row] = ["21354", "13254", "21435", "13254", "21435", "13254", "21435", "13254", "21435", "13254"]
-    let expectedG5 = PlaceNotation(stage: .doubles, changes: g5_changes.map(\.row))
+    let expectedG5 = PlaceNotation(stage: .doubles, changes: g5_changes.map(\.narrow))
     #expect(try PlaceNotation(string: g5) == expectedG5)
   }
 
