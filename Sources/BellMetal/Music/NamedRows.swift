@@ -149,8 +149,13 @@ extension NamedRow {
     }
   }
   
+  /// Treble (and, on even stages, tenor) fixed, every other pair crossing.
+  /// Parsed at `stage` explicitly: "1" alone would otherwise infer
+  /// Singles, and the tenor's place must be its symbol ("T"), not its
+  /// decimal count ("12").
   private func intermediateChange(at stage: Stage) -> PlaceNotation {
-    (stage.even ? try! PlaceNotation(string: "1\(stage.count)") : "1")
+    let places = stage.even ? "1" + PlaceNotationParser.representPlace(stage.count) : "1"
+    return try! PlaceNotation(string: places, at: stage) // Safe: a valid change on every stage
   }
   
   private func queens(at stage: Stage) -> Row {

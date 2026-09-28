@@ -134,4 +134,22 @@ struct NamedRowsTests {
   func allCasesCount() {
     #expect(NamedRow.allCases.count == 16)
   }
+
+  @Test("intermediate and jokers work on every stage, including 10 bells and up")
+  func intermediateEveryStage() {
+    for count in 1...Stage.maxCount {
+      let stage = Stage(count)
+      // Treble fixed, then each following pair swapped; on even stages the
+      // tenor is left over and fixed too.
+      var expected = Array(1...count)
+      let swappedUpTo = stage.even ? count - 1 : count
+      for i in stride(from: 1, to: swappedUpTo - 1, by: 2) {
+        expected.swapAt(i, i + 1)
+      }
+      #expect(NamedRow.intermediate.row(at: stage) == Row(expected), "stage \(stage)")
+      if let jacks = NamedRow.jacks.row(at: stage) {
+        #expect(NamedRow.jokers.row(at: stage) == jacks * Row(expected), "stage \(stage)")
+      }
+    }
+  }
 }
