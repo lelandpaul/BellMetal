@@ -5,9 +5,21 @@ import Foundation
 public struct PlaceNotation: Sendable {
   /// The stage this place notation is written at.
   public let stage: Stage
-  private let changes: [RawRow]
-  
-  internal init(stage: Stage, changes: [RawRow]) {
+  internal let changes: Changes
+
+  /// The changes, in the raw layout the stage uses. Operations switch on
+  /// this once, then run on the raw changes directly.
+  internal enum Changes: Hashable, Sendable {
+    case narrow([RawRow])
+    case wide([WideRawRow])
+  }
+
+  internal init<R: RawLayout>(stage: Stage, changes: [R]) {
+    self.stage = stage
+    self.changes = R.changes(changes)
+  }
+
+  private init(stage: Stage, changes: Changes) {
     self.stage = stage
     self.changes = changes
   }
@@ -86,9 +98,9 @@ extension PlaceNotation: CustomStringConvertible {
   /// looking for a split in which both segments are palindromes about a change.
   /// - Returns: The reduced forms (i.e. from begining up through apex)
   /// of of two palindromes that together make up the full sequence of changes.
-  private func findPalindromicSplit() -> ([RawRow], [RawRow])? {
-    for i in self.changes.indices {
-      let (a,b) = (Array(self.changes[...i]), Array(self.changes[(i+1)...]))
+  private static func findPalindromicSplit<R: RawLayout>(_ changes: [R]) -> ([R], [R])? {
+    for i in changes.indices {
+      let (a,b) = (Array(changes[...i]), Array(changes[(i+1)...]))
       if let ap = a.reduceOddPalindrome(),
          let bp = b.reduceOddPalindrome()
       {
@@ -102,7 +114,7 @@ extension PlaceNotation: CustomStringConvertible {
   /// - Parameter changes: A sequence of changes.
   /// - Returns: A string of valid place notation representing those changes,
   /// including "." separators where appropriate.
-  private static func changesToString(_ changes: [RawRow]) -> String {
+  private static func changesToString<R: RawLayout>(_ changes: [R]) -> String {
     var strings = Array(changes.map { change in
       let places = change.fixedBells.map { $0 + 1 }
       if places.isEmpty { return "x" }
@@ -124,10 +136,17 @@ extension PlaceNotation: CustomStringConvertible {
   }
   
   public var description: String {
-    if let (a,b) = self.findPalindromicSplit() {
-      return PlaceNotation.changesToString(a) + "," + PlaceNotation.changesToString(b)
+    switch changes {
+    case .narrow(let changes): PlaceNotation.describe(changes)
+    case .wide(let changes): PlaceNotation.describe(changes)
     }
-    return PlaceNotation.changesToString(changes)
+  }
+
+  private static func describe<R: RawLayout>(_ changes: [R]) -> String {
+    if let (a,b) = findPalindromicSplit(changes) {
+      return changesToString(a) + "," + changesToString(b)
+    }
+    return changesToString(changes)
   }
 }
 
@@ -165,9 +184,9 @@ extension PlaceNotation {
     case untilPosition(bell: Bell, position: Int)
   }
   
-  private func shouldKeepRepeating(
-    rows: [RawRow],
-    rowSet: Set<RawRow>,
+  private func shouldKeepRepeating<R: RawLayout>(
+    rows: [R],
+    rowSet: Set<R>,
     repetitions: UInt,
     conditions: [RepeatCondition]
   ) -> Bool {
@@ -190,8 +209,8 @@ extension PlaceNotation {
     return true
   }
   
-  private func prickOneRepetition(_ row: RawRow) -> [RawRow] {
-    Array(self.changes.reduce(into: [row]) { into, new in
+  private func prickOneRepetition<R: RawLayout>(_ row: R, changes: [R]) -> [R] {
+    Array(changes.reduce(into: [row]) { into, new in
       into.append(into.last!.composePermutation(new, rawStage: stage.rawValue))
     }.dropFirst())
   }
@@ -216,12 +235,25 @@ extension PlaceNotation {
   ) throws -> Block {
     let row = row ?? stage.rounds
     guard row.stage == self.stage else { throw BellMetalError.stageMismatch }
-    
-    var rawRows = [row.narrow]
+    return switch changes {
+    case .narrow(let changes):
+      prick(from: RawRow.raw(of: row), changes: changes, keeping: leadheadMode, repeat: repeatConditions)
+    case .wide(let changes):
+      prick(from: WideRawRow.raw(of: row), changes: changes, keeping: leadheadMode, repeat: repeatConditions)
+    }
+  }
+
+  private func prick<R: RawLayout>(
+    from row: R,
+    changes: [R],
+    keeping leadheadMode: LeadheadMode,
+    repeat repeatConditions: [RepeatCondition]
+  ) -> Block {
+    var rawRows = [row]
     var rawRowsSet = Set(rawRows)
     var repetitions: UInt = 0
     repeat {
-      let newRows = prickOneRepetition(rawRows.last!)
+      let newRows = prickOneRepetition(rawRows.last!, changes: changes)
       rawRows += newRows
       rawRowsSet.insert(contentsOf: newRows)
       repetitions += 1
@@ -240,7 +272,7 @@ extension PlaceNotation {
       rawRows.removeLast()
     case .keepBoth: break
     }
-    return Block(stage: stage, rows: rawRows, rowSet: Set(rawRows))
+    return Block(stage: stage, raw: RawBlock(rows: rawRows))
   }
 }
 
@@ -248,15 +280,24 @@ extension PlaceNotation {
 extension PlaceNotation {
   /// The number of individual changes in this place notation.
   public var count: Int {
-    changes.count
+    switch changes {
+    case .narrow(let changes): changes.count
+    case .wide(let changes): changes.count
+    }
   }
   
   /// The total transposition reached by this place notation.
   public var leadhead: Row {
-    Row(
-      stage: stage,
-      narrow: changes.reduce(into: stage.rounds.narrow) { $0 = $0.composePermutation($1, rawStage: stage.rawValue) }
-    )
+    switch changes {
+    case .narrow(let changes): leadhead(changes)
+    case .wide(let changes): leadhead(changes)
+    }
+  }
+
+  private func leadhead<R: RawLayout>(_ changes: [R]) -> Row {
+    changes.reduce(into: R.rounds(rawStage: stage.rawValue)) {
+      $0 = $0.composePermutation($1, rawStage: stage.rawValue)
+    }.row(stage: stage)
   }
 }
 
@@ -283,7 +324,14 @@ extension PlaceNotation {
     guard stage < newStage else {
       throw BellMetalError.invalidStage
     }
-    return PlaceNotation(stage: newStage, changes: changes.map { $0.extend(from: stage, to: newStage) })
+    switch (changes, newStage.usesWideLayout) {
+    case (.narrow(let changes), false):
+      return PlaceNotation(stage: newStage, changes: changes.map { $0.extend(from: stage, to: newStage) })
+    case (.narrow(let changes), true):
+      return PlaceNotation(stage: newStage, changes: changes.map { WideRawRow(widening: $0, from: stage, to: newStage) })
+    case (.wide(let changes), _):
+      return PlaceNotation(stage: newStage, changes: changes.map { $0.extend(from: stage, to: newStage) })
+    }
   }
 }
 
@@ -292,8 +340,11 @@ extension PlaceNotation {
   /// Safe, throwing concatenation of two PlaceNotations
   public func concatenate(with other: PlaceNotation) throws -> PlaceNotation {
     guard stage == other.stage else { throw BellMetalError.stageMismatch }
-    return .init(stage: stage, changes: changes + other.changes)
-    
+    switch (changes, other.changes) {
+    case let (.narrow(lhs), .narrow(rhs)): return PlaceNotation(stage: stage, changes: lhs + rhs)
+    case let (.wide(lhs), .wide(rhs)): return PlaceNotation(stage: stage, changes: lhs + rhs)
+    default: preconditionFailure("Same stage, different layouts: \(stage)")
+    }
   }
   
   /// Unsafe, non-throwing concatenation of PlaceNotation.
@@ -315,9 +366,13 @@ extension PlaceNotation {
     guard range.lowerBound >= 0, range.upperBound <= count else {
       throw BellMetalError.invalidIndex
     }
-    var newChanges = changes
-    newChanges.replaceSubrange(range, with: replacement.changes)
-    return PlaceNotation(stage: stage, changes: newChanges)
+    switch (changes, replacement.changes) {
+    case let (.narrow(changes), .narrow(replacement)):
+      return PlaceNotation(stage: stage, changes: changes.replacingSubrange(range, with: replacement))
+    case let (.wide(changes), .wide(replacement)):
+      return PlaceNotation(stage: stage, changes: changes.replacingSubrange(range, with: replacement))
+    default: preconditionFailure("Same stage, different layouts: \(stage)")
+    }
   }
 
   /// Replaces the changes in `range` with the changes parsed from
@@ -358,7 +413,10 @@ extension PlaceNotation {
     guard range.lowerBound >= 0, range.upperBound <= count else {
       throw BellMetalError.invalidIndex
     }
-    return PlaceNotation(stage: stage, changes: Array(changes[range]))
+    return switch changes {
+    case .narrow(let changes): PlaceNotation(stage: stage, changes: Array(changes[range]))
+    case .wide(let changes): PlaceNotation(stage: stage, changes: Array(changes[range]))
+    }
   }
 }
 

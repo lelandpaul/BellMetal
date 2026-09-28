@@ -40,3 +40,32 @@ internal protocol RawPermutation: Hashable, Sendable {
   /// The (raw) bells that are in their home position.
   var fixedBells: [UInt8] { get }
 }
+
+/// Moving between a raw layout and the public types that store it, so
+/// code generic over the layout can take and return `Row`s, `Block`s and
+/// `PlaceNotation`s. Each is a plain wrap or unwrap; the caller has
+/// already matched the layout to the stage.
+internal protocol RawLayout: RawPermutation {
+  /// Wraps this raw row as a `Row` of the given stage.
+  func row(stage: Stage) -> Row
+  /// Unwraps a row that uses this layout.
+  static func raw(of row: Row) -> Self
+  /// Wraps raw rows as a `Block`'s storage.
+  static func blockStorage(_ raw: RawBlock<Self>) -> Block.Storage
+  /// Wraps raw changes as a `PlaceNotation`'s storage.
+  static func changes(_ raw: [Self]) -> PlaceNotation.Changes
+}
+
+extension RawRow: RawLayout {
+  internal func row(stage: Stage) -> Row { Row(stage: stage, narrow: self) }
+  internal static func raw(of row: Row) -> RawRow { row.narrow }
+  internal static func blockStorage(_ raw: RawBlock<RawRow>) -> Block.Storage { .narrow(raw) }
+  internal static func changes(_ raw: [RawRow]) -> PlaceNotation.Changes { .narrow(raw) }
+}
+
+extension WideRawRow: RawLayout {
+  internal func row(stage: Stage) -> Row { Row(stage: stage, wide: self) }
+  internal static func raw(of row: Row) -> WideRawRow { row.wide }
+  internal static func blockStorage(_ raw: RawBlock<WideRawRow>) -> Block.Storage { .wide(raw) }
+  internal static func changes(_ raw: [WideRawRow]) -> PlaceNotation.Changes { .wide(raw) }
+}

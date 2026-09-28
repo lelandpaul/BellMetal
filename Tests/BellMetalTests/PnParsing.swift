@@ -166,11 +166,11 @@ struct PnParsingTests {
   func parseAllChanges() throws {
     let pb4 = "x4x4,2"
     let pb4_changes: [Row] = ["2143", "1324", "2143", "1324", "2143", "1324", "2143", "1243"]
-    #expect(try PNP.parseAllChanges(pb4).1 == pb4_changes.map(\.narrow))
+    #expect(try PNP.parseAllChanges(pb4).1 == .narrow(pb4_changes.map(\.narrow)))
     
     let g5 = "3,1.5.1.5.1"
     let g5_changes: [Row] = ["21354", "13254", "21435", "13254", "21435", "13254", "21435", "13254", "21435", "13254"]
-    #expect(try PNP.parseAllChanges(g5).1 == g5_changes.map(\.narrow))
+    #expect(try PNP.parseAllChanges(g5).1 == .narrow(g5_changes.map(\.narrow)))
   }
   
   @Test("PlaceNotation(string:) parses plain bob minimus and grandsire doubles correctly")

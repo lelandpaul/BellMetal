@@ -229,8 +229,8 @@ extension PlaceNotationParser {
     return (knownStage, adjustedChanges)
   }
   
-  internal static func changeToRawRow(_ places: [Int], at stage: Stage) -> RawRow {
-    var change = stage.rounds.narrow
+  internal static func changeToRawRow<R: RawLayout>(_ places: [Int], at stage: Stage) -> R {
+    var change = R.rounds(rawStage: stage.rawValue)
     var i = 0
     while i < stage.count - 1 {
       if places.contains(i+1) {
@@ -263,8 +263,11 @@ extension PlaceNotationParser {
   internal static func parseAllChanges(
     _ pn: String,
     at stage: Stage? = nil
-  ) throws -> (Stage, [RawRow]) {
+  ) throws -> (Stage, PlaceNotation.Changes) {
     let (knownStage, places) = try parseAllPlaces(pn, at: stage)
-    return (knownStage, places.map { changeToRawRow($0, at: knownStage) })
+    if knownStage.usesWideLayout {
+      return (knownStage, .wide(places.map { changeToRawRow($0, at: knownStage) }))
+    }
+    return (knownStage, .narrow(places.map { changeToRawRow($0, at: knownStage) }))
   }
 }
