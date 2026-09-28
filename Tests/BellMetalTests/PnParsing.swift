@@ -29,6 +29,7 @@ struct PnParsingTests {
     // A change consisting solely of a letter must not be dropped entirely.
     #expect(try PNP.splitToChanges("E") == ["E"])
     #expect(try PNP.splitToChanges("x1E.T4x") == ["x", "1E", "T4", "x"])
+    #expect(try PNP.splitToChanges("x1N.FGx") == ["x", "1N", "FG", "x"])
   }
 
   @Test("splitToChanges throws on an unrecognized character instead of silently dropping it")
@@ -86,6 +87,16 @@ struct PnParsingTests {
     #expect(try PNP.inferStage(minor) == .minor)
     let withCrossChange = [[],[5]]
     #expect(try PNP.inferStage(withCrossChange) == .minor)
+    // The top place of each layout, which the old `< 16` bound rejected at 16.
+    #expect(try PNP.inferStage([[1, 16]]) == .sixteen)
+    #expect(try PNP.inferStage([[], [1, 16]]) == .sixteen)
+    #expect(try PNP.inferStage([[], [15]]) == .sixteen)
+    #expect(try PNP.inferStage([[], [17]]) == .eighteen)
+    #expect(try PNP.inferStage([[1, 24]]) == .twentyFour)
+    #expect(try PNP.inferStage([[], [23]]) == .twentyFour)
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.inferStage([[1, 25]])
+    }
   }
 
   @Test("inferStage throws when an all-cross change list carries no places to infer from")
@@ -216,6 +227,8 @@ struct PnParsingTests {
     #expect(try PNP.getExplicitStage("E:34").0 == .cinques)
     #expect(try PNP.getExplicitStage("T:x1T").0 == .maximus)
     #expect(try PNP.getExplicitStage("D:x1D").0 == .sixteen)
+    #expect(try PNP.getExplicitStage("F:x1F").0 == .seventeen)
+    #expect(try PNP.getExplicitStage("N:x1N").0 == .twentyFour)
     #expect(try PNP.getExplicitStage("no-prefix-here").0 == nil)
   }
 }

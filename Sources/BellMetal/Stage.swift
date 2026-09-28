@@ -3,7 +3,8 @@ import Foundation
 /// The number of bells something is rung on, e.g. `.major` for 8 bells.
 ///
 /// Every supported stage has a named constant (`.one`, `.minor`,
-/// `.maximus`, `.sixteen`, ...); `init(_:)` builds one from a bell count.
+/// `.maximus`, `.sixteen`, `.twentyFour`, ...); `init(_:)` builds one
+/// from a bell count.
 public struct Stage: RawRepresentable, Hashable, Sendable {
   /// One fewer than the number of bells, e.g. 7 for `.major`.
   public let rawValue: UInt8
@@ -22,7 +23,7 @@ public struct Stage: RawRepresentable, Hashable, Sendable {
   }
 
   /// The largest supported number of bells.
-  public static let maxCount = 16
+  public static let maxCount = 24
 
   /// The largest number of bells stored in the narrow (`RawRow`) layout.
   internal static let narrowMaxCount: UInt8 = 16
@@ -50,6 +51,14 @@ extension Stage {
   public static let fourteen = Stage(uncheckedRawValue: 0xD)
   public static let fifteen = Stage(uncheckedRawValue: 0xE)
   public static let sixteen = Stage(uncheckedRawValue: 0xF)
+  public static let seventeen = Stage(uncheckedRawValue: 0x10)
+  public static let eighteen = Stage(uncheckedRawValue: 0x11)
+  public static let nineteen = Stage(uncheckedRawValue: 0x12)
+  public static let twenty = Stage(uncheckedRawValue: 0x13)
+  public static let twentyOne = Stage(uncheckedRawValue: 0x14)
+  public static let twentyTwo = Stage(uncheckedRawValue: 0x15)
+  public static let twentyThree = Stage(uncheckedRawValue: 0x16)
+  public static let twentyFour = Stage(uncheckedRawValue: 0x17)
 }
 
 extension Stage {
@@ -139,6 +148,8 @@ extension Stage: CustomStringConvertible {
   private static let names = [
     "One", "Two", "Singles", "Minimus", "Doubles", "Minor", "Triples", "Major",
     "Caters", "Royal", "Cinques", "Maximus", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+    "Seventeen", "Eighteen", "Nineteen", "Twenty",
+    "Twenty-One", "Twenty-Two", "Twenty-Three", "Twenty-Four",
   ]
 
   public var description: String {

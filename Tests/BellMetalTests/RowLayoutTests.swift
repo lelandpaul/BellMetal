@@ -3,8 +3,7 @@ import Testing
 @testable import BellMetal
 
 /// Row's two-word layout: its size, the stage packed into it, and wide
-/// rows' arithmetic. Wide rows are built internally, since the public
-/// stage cap is still 16.
+/// rows' arithmetic, checked on raw bells against the reference.
 @Suite("Row layout unit tests")
 struct RowLayoutTests {
   typealias Reference = RawPermutationTests

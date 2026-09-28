@@ -16,7 +16,7 @@ struct CodableTests {
 
   @Test("Bell encodes and decodes as its letter, and rejects unknown letters")
   func bellRoundTrip() throws {
-    for bell in Stage.sixteen.allBells {
+    for bell in Stage.twentyFour.allBells {
       _ = try roundTrip(bell)
     }
     let data = try encoder.encode(Bell.bT)
@@ -29,14 +29,14 @@ struct CodableTests {
 
   @Test("Stage encodes and decodes as its bell count, and rejects out-of-range counts")
   func stageRoundTrip() throws {
-    for stage: Stage in [.one, .doubles, .major, .cinques, .sixteen] {
+    for stage: Stage in [.one, .doubles, .major, .cinques, .sixteen, .seventeen, .twentyFour] {
       _ = try roundTrip(stage)
     }
     let data = try encoder.encode(Stage.major)
     #expect(String(data: data, encoding: .utf8) == "8")
 
     #expect(throws: (any Error).self) {
-      try decoder.decode(Stage.self, from: Data("17".utf8))
+      try decoder.decode(Stage.self, from: Data("25".utf8))
     }
     #expect(throws: (any Error).self) {
       try decoder.decode(Stage.self, from: Data("0".utf8))
@@ -47,6 +47,9 @@ struct CodableTests {
   func rowRoundTrip() throws {
     let row: Row = "2143658709TEBADC"
     _ = try roundTrip(row)
+    let wide: Row = "2143658709TEBADCGFJHLKNM"
+    _ = try roundTrip(wide)
+    #expect(String(data: try encoder.encode(wide), encoding: .utf8) == "\"2143658709TEBADCGFJHLKNM\"")
 
     let data = try encoder.encode(row)
     #expect(String(data: data, encoding: .utf8) == "\"2143658709TEBADC\"")

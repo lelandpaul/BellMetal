@@ -10,22 +10,25 @@ struct BellTests {
     #expect(Bell.b0.number == 10)
     #expect(Bell.bT.number == 12)
     #expect(Bell.bD.number == 16)
+    #expect(Bell.bF.number == 17)
+    #expect(Bell.bN.number == 24)
   }
 
   @Test("init(number:) round-trips every bell")
   func roundTrip() {
-    for bell in Stage.sixteen.allBells {
+    for bell in Stage.twentyFour.allBells {
       #expect(Bell(number: bell.number) == bell)
-      #expect(Bell(number: bell.number, on: .sixteen) == bell)
+      #expect(Bell(number: bell.number, on: .twentyFour) == bell)
     }
   }
 
-  @Test("init(number:) rejects numbers outside 1...16")
+  @Test("init(number:) rejects numbers outside 1...24")
   func outOfRange() {
     #expect(Bell(number: 0) == nil)
     #expect(Bell(number: -1) == nil)
     #expect(Bell(number: Int.min) == nil)
-    #expect(Bell(number: 17) == nil)
+    #expect(Bell(number: 17) == .bF)
+    #expect(Bell(number: 25) == nil)
     #expect(Bell(number: Int.max) == nil)
   }
 
@@ -55,12 +58,12 @@ struct BellTests {
       #expect(bell.description.count == 1)
       #expect(Bell(character: Character(bell.description)) == bell)
     }
-    #expect(Stage(Stage.maxCount).allBells.map(\.description).joined() == "1234567890ETABCD")
+    #expect(Stage(Stage.maxCount).allBells.map(\.description).joined() == "1234567890ETABCDFGHJKLMN")
   }
 
   @Test("init?(character:) rejects non-symbols, including lowercase and non-ASCII")
   func rejectsNonSymbols() {
-    for character: Character in ["x", "e", "t", "Z", " ", "\u{7F}", "é", "🔔"] {
+    for character: Character in ["x", "e", "t", "I", "O", "P", "Z", " ", "\u{7F}", "é", "🔔"] {
       #expect(Bell(character: character) == nil)
     }
   }

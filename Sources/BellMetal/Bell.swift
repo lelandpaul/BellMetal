@@ -2,8 +2,9 @@ import Foundation
 
 /// An individual bell, e.g. `.bT` for bell 12.
 ///
-/// Every bell has a named constant (`.b1`...`.b9`, `.b0`, `.bE`, `.bT`,
-/// `.bA`, `.bB`, `.bC`, `.bD`) spelled after its single-character symbol.
+/// Every bell has a named constant spelled after its single-character
+/// symbol: `.b1`...`.b9`, `.b0`, `.bE`, `.bT`, `.bA`, `.bB`, `.bC`, `.bD`,
+/// `.bF`, `.bG`, `.bH`, `.bJ`, `.bK`, `.bL`, `.bM`, `.bN`.
 public struct Bell: RawRepresentable, Hashable, Sendable {
   /// One fewer than the bell's number, e.g. 11 for `.bT`.
   public let rawValue: UInt8
@@ -39,11 +40,19 @@ extension Bell {
   public static let bB = Bell(uncheckedRawValue: 0xD)
   public static let bC = Bell(uncheckedRawValue: 0xE)
   public static let bD = Bell(uncheckedRawValue: 0xF)
+  public static let bF = Bell(uncheckedRawValue: 0x10)
+  public static let bG = Bell(uncheckedRawValue: 0x11)
+  public static let bH = Bell(uncheckedRawValue: 0x12)
+  public static let bJ = Bell(uncheckedRawValue: 0x13)
+  public static let bK = Bell(uncheckedRawValue: 0x14)
+  public static let bL = Bell(uncheckedRawValue: 0x15)
+  public static let bM = Bell(uncheckedRawValue: 0x16)
+  public static let bN = Bell(uncheckedRawValue: 0x17)
 }
 
 extension Bell {
   /// Each bell's single-character symbol, indexed by raw value.
-  internal static let symbols: [Character] = Array("1234567890ETABCD")
+  internal static let symbols: [Character] = Array("1234567890ETABCDFGHJKLMN")
 
   /// Raw values indexed by ASCII code, or `noBell` for characters that
   /// aren't a bell symbol.
@@ -67,7 +76,7 @@ extension Bell: CustomStringConvertible {
 extension Bell: ExpressibleByStringLiteral {
   /// Creates a bell from a single-character string, e.g. `"T"` for bell 12.
   /// - Precondition: `value` must be exactly one character, and a valid bell
-  /// (one of "1"..."9", "0", "E", "T", "A", "B", "C", "D"). Use `init?(character:)`
+  /// (one of "1"..."9", "0", "E", "T", "A"..."D", "F"..."H", "J"..."N"). Use `init?(character:)`
   /// instead when the source might not satisfy that (e.g. untrusted input).
   public init(stringLiteral value: String) {
     precondition(value.count == 1, "Invalid Bell literal: \(value)")
@@ -90,7 +99,7 @@ extension Bell: ExpressibleByStringLiteral {
 
 extension Bell {
   /// Safe, failable construction from a single-character representation of a bell
-  /// (one of "1"..."9", "0", "E", "T", "A", "B", "C", "D"). Returns nil for any
+  /// (one of "1"..."9", "0", "E", "T", "A"..."D", "F"..."H", "J"..."N"). Returns nil for any
   /// other character, rather than trapping like the ExpressibleByStringLiteral
   /// initializer -- use this when the character comes from untrusted input.
   public init?(character: Character) {

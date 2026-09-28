@@ -3,8 +3,7 @@ import Testing
 @testable import BellMetal
 
 /// Block and PlaceNotation in the wide layout, and across the 16/17
-/// boundary. Wide stages are built internally, since the public stage cap
-/// is still 16.
+/// boundary.
 @Suite("Block and PlaceNotation layout unit tests")
 struct CollectionLayoutTests {
   typealias Reference = RawPermutationTests

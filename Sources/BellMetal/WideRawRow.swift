@@ -37,7 +37,7 @@ extension WideRawRow {
   /// to `to` with covers. The only place the two layouts meet.
   /// - Precondition: `from` fits the narrow layout; `to` is above it.
   internal init(widening narrow: RawRow, from: Stage, to: Stage) {
-    precondition(from.rawValue < 16 && from < to, "Invalid widening: \(from) to \(to)")
+    precondition(!from.usesWideLayout && to.usesWideLayout, "Invalid widening: \(from) to \(to)")
     self = .build(rawStage: to.rawValue) { position in
       position <= from.rawValue ? narrow.rawBell(at: position) : position
     }
