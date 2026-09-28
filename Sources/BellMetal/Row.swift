@@ -94,7 +94,7 @@ extension Row: CustomStringConvertible {
     var result: [String] = []
     var row = self.row
     for _ in 0..<Int(self.stage.count) {
-      let bell = Bell(rawValue: UInt8(row & 0xF))! // Safe: Checked when row was created
+      let bell = Bell(uncheckedRawValue: UInt8(row & 0xF)) // Safe: Checked when row was created
       result.append(bell.description)
       row >>= 4
     }
@@ -138,7 +138,7 @@ extension Row {
   public subscript(_ position: Int) -> Bell {
     precondition(position > 0 && position <= self.stage.count, "Invalid position for row of stage \(stage): \(position)")
     let raw = self.row.rawBell(at: UInt8(position - 1))
-    return Bell(rawValue: raw)! // Safe: Checked when row is built
+    return Bell(uncheckedRawValue: raw) // Safe: Checked when row is built
   }
   
   

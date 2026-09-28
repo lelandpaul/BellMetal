@@ -48,6 +48,13 @@ extension RawRow {
     return newRow
   }
 
+  /// Rounds at the given raw stage: every bell in its home position.
+  /// The full-stage constant, with the positions above `rawStage` masked
+  /// off.
+  internal static func rounds(rawStage: UInt8) -> RawRow {
+    0xFEDC_BA98_7654_3210 & (RawRow.max >> (4 * (15 - rawStage)))
+  }
+
   /// Handles multiplying two permutations. Performs no
   /// safety checks.
   internal func composePermutation(_ other: RawRow, rawStage: UInt8) -> RawRow {

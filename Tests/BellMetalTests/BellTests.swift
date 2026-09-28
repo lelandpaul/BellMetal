@@ -39,4 +39,34 @@ struct BellTests {
     #expect(Bell(number: -3, on: .major) == nil)
     #expect(Bell(number: 17, on: .sixteen) == nil)
   }
+
+  @Test("init?(rawValue:) accepts exactly 0..<Stage.maxCount")
+  func rawValueRange() {
+    for number in 1...Stage.maxCount {
+      #expect(Bell(rawValue: UInt8(number - 1)) == Bell(number: number))
+    }
+    #expect(Bell(rawValue: UInt8(Stage.maxCount)) == nil)
+    #expect(Bell(rawValue: .max) == nil)
+  }
+
+  @Test("Every bell's symbol round-trips through init?(character:)")
+  func symbolRoundTrip() {
+    for bell in Stage(Stage.maxCount).allBells {
+      #expect(bell.description.count == 1)
+      #expect(Bell(character: Character(bell.description)) == bell)
+    }
+    #expect(Stage(Stage.maxCount).allBells.map(\.description).joined() == "1234567890ETABCD")
+  }
+
+  @Test("init?(character:) rejects non-symbols, including lowercase and non-ASCII")
+  func rejectsNonSymbols() {
+    for character: Character in ["x", "e", "t", "Z", " ", "\u{7F}", "é", "🔔"] {
+      #expect(Bell(character: character) == nil)
+    }
+  }
+
+  @Test("Bell stays a single byte")
+  func layout() {
+    #expect(MemoryLayout<Bell>.size == 1)
+  }
 }

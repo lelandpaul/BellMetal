@@ -1,31 +1,55 @@
 import Foundation
 
-/// An enum representing available stages.
-public enum Stage: UInt8, Sendable {
-  case one = 0x0
-  case two = 0x1
-  case singles = 0x2
-  case minimus = 0x3
-  case doubles = 0x4
-  case minor = 0x5
-  case triples = 0x6
-  case major = 0x7
-  case caters = 0x8
-  case royal = 0x9
-  case cinques = 0xA
-  case maximus = 0xB
-  case thirteen = 0xC
-  case fourteen = 0xD
-  case fifteen = 0xE
-  case sixteen = 0xF
+/// The number of bells something is rung on, e.g. `.major` for 8 bells.
+///
+/// Every supported stage has a named constant (`.one`, `.minor`,
+/// `.maximus`, `.sixteen`, ...); `init(_:)` builds one from a bell count.
+public struct Stage: RawRepresentable, Hashable, Sendable {
+  /// One fewer than the number of bells, e.g. 7 for `.major`.
+  public let rawValue: UInt8
+
+  /// Creates the stage with the given (0-indexed) raw value, e.g. 7 for
+  /// `.major`. Returns nil if it's not below `Stage.maxCount`.
+  public init?(rawValue: UInt8) {
+    guard Int(rawValue) < Stage.maxCount else { return nil }
+    self.rawValue = rawValue
+  }
+
+  /// Creates the stage with the given raw value, which the caller has
+  /// already checked is below `Stage.maxCount`.
+  internal init(uncheckedRawValue rawValue: UInt8) {
+    self.rawValue = rawValue
+  }
+
+  /// The largest supported number of bells.
+  public static let maxCount = 16
 }
 
 extension Stage {
-  /// Creates the stage with the given number of bells (1...16).
-  /// - Precondition: `count` must be between 1 and 16, inclusive.
+  public static let one = Stage(uncheckedRawValue: 0x0)
+  public static let two = Stage(uncheckedRawValue: 0x1)
+  public static let singles = Stage(uncheckedRawValue: 0x2)
+  public static let minimus = Stage(uncheckedRawValue: 0x3)
+  public static let doubles = Stage(uncheckedRawValue: 0x4)
+  public static let minor = Stage(uncheckedRawValue: 0x5)
+  public static let triples = Stage(uncheckedRawValue: 0x6)
+  public static let major = Stage(uncheckedRawValue: 0x7)
+  public static let caters = Stage(uncheckedRawValue: 0x8)
+  public static let royal = Stage(uncheckedRawValue: 0x9)
+  public static let cinques = Stage(uncheckedRawValue: 0xA)
+  public static let maximus = Stage(uncheckedRawValue: 0xB)
+  public static let thirteen = Stage(uncheckedRawValue: 0xC)
+  public static let fourteen = Stage(uncheckedRawValue: 0xD)
+  public static let fifteen = Stage(uncheckedRawValue: 0xE)
+  public static let sixteen = Stage(uncheckedRawValue: 0xF)
+}
+
+extension Stage {
+  /// Creates the stage with the given number of bells (1...`Stage.maxCount`).
+  /// - Precondition: `count` must be between 1 and `Stage.maxCount`, inclusive.
   public init(_ count: Int) {
-    precondition(count >= 1 && count <= 16, "Invalid Stage number: \(count).")
-    self.init(rawValue: UInt8(count - 1))! // Safe: precondition
+    precondition(count >= 1 && count <= Stage.maxCount, "Invalid Stage number: \(count).")
+    self.init(uncheckedRawValue: UInt8(count - 1))
   }
 
   /// The number of bells on this stage, e.g. 8 for `.major`.
@@ -42,14 +66,14 @@ extension Stage {
 extension Stage {
   /// The heaviest (highest-numbered) bell on this stage.
   public var tenor: Bell {
-    Bell(rawValue: rawValue)! // Safe: raw values are known to be the same
+    Bell(uncheckedRawValue: rawValue) // Safe: every stage's tenor is a valid bell
   }
 
   /// The two heaviest bells on this stage, in ringing order (e.g. 7,8 on Major).
   /// - Precondition: the stage must have at least two bells.
   public var tenorPair: (Bell, Bell) {
     precondition(self > .one, "tenorPair requires at least two bells: \(self)")
-    return (Bell(rawValue: rawValue - 1)!, Bell(rawValue: rawValue)!)
+    return (Bell(uncheckedRawValue: rawValue - 1), Bell(uncheckedRawValue: rawValue))
   }
 
   /// Whether the given bell exists on this stage.
@@ -59,45 +83,12 @@ extension Stage {
 
   /// Every bell on this stage, from the treble to the tenor.
   public var allBells: [Bell] {
-    (0...rawValue).map { Bell(rawValue: $0)! }
+    (0...rawValue).map { Bell(uncheckedRawValue: $0) }
   }
 
   /// Rounds on this stage, e.g. "12345678" on Major.
   public var rounds: Row {
-    switch self {
-    case .one:
-      "1"
-    case .two:
-      "12"
-    case .singles:
-      "123"
-    case .minimus:
-      "1234"
-    case .doubles:
-      "12345"
-    case .minor:
-      "123456"
-    case .triples:
-      "1234567"
-    case .major:
-      "12345678"
-    case .caters:
-      "123456789"
-    case .royal:
-      "1234567890"
-    case .cinques:
-      "1234567890E"
-    case .maximus:
-      "1234567890ET"
-    case .thirteen:
-      "1234567890ETA"
-    case .fourteen:
-      "1234567890ETAB"
-    case .fifteen:
-      "1234567890ETABC"
-    case .sixteen:
-      "1234567890ETABCD"
-    }
+    Row(stage: self, row: RawRow.rounds(rawStage: rawValue))
   }
 }
 
@@ -114,12 +105,12 @@ extension Stage: Comparable {
 
 extension Stage: Codable {
   /// Encodes/decodes as the bell count (e.g. 8 for Major), not the raw
-  /// (0-indexed) enum value, since the count is the meaningful, stable
+  /// (0-indexed) value, since the count is the meaningful, stable
   /// external representation.
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
     let count = try container.decode(Int.self)
-    guard count >= 1 && count <= 16 else {
+    guard count >= 1 && count <= Stage.maxCount else {
       throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid Stage bell count: \(count)")
     }
     self.init(count)
@@ -134,24 +125,13 @@ extension Stage: Codable {
 // MARK: - CustomStringConvertible
 
 extension Stage: CustomStringConvertible {
+  /// Each stage's name, indexed by raw value.
+  private static let names = [
+    "One", "Two", "Singles", "Minimus", "Doubles", "Minor", "Triples", "Major",
+    "Caters", "Royal", "Cinques", "Maximus", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+  ]
+
   public var description: String {
-    switch self {
-    case .one: "One"
-    case .two: "Two"
-    case .singles: "Singles"
-    case .minimus: "Minimus"
-    case .doubles: "Doubles"
-    case .minor: "Minor"
-    case .triples: "Triples"
-    case .major: "Major"
-    case .caters: "Caters"
-    case .royal: "Royal"
-    case .cinques: "Cinques"
-    case .maximus: "Maximus"
-    case .thirteen: "Thirteen"
-    case .fourteen: "Fourteen"
-    case .fifteen: "Fifteen"
-    case .sixteen: "Sixteen"
-    }
+    Stage.names[Int(rawValue)]
   }
 }

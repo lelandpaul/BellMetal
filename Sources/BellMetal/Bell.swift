@@ -1,31 +1,66 @@
 import Foundation
 
-/// An enum representing an individual bell.
-public enum Bell: UInt8, Sendable {
-  case b1, b2, b3, b4, b5, b6, b7, b8, b9, b0, bE, bT, bA, bB, bC, bD
+/// An individual bell, e.g. `.bT` for bell 12.
+///
+/// Every bell has a named constant (`.b1`...`.b9`, `.b0`, `.bE`, `.bT`,
+/// `.bA`, `.bB`, `.bC`, `.bD`) spelled after its single-character symbol.
+public struct Bell: RawRepresentable, Hashable, Sendable {
+  /// One fewer than the bell's number, e.g. 11 for `.bT`.
+  public let rawValue: UInt8
+
+  /// Creates the bell with the given (0-indexed) raw value, e.g. 11 for
+  /// `.bT`. Returns nil if it's not below `Stage.maxCount`.
+  public init?(rawValue: UInt8) {
+    guard Int(rawValue) < Stage.maxCount else { return nil }
+    self.rawValue = rawValue
+  }
+
+  /// Creates the bell with the given raw value, which the caller has
+  /// already checked is below `Stage.maxCount`.
+  internal init(uncheckedRawValue rawValue: UInt8) {
+    self.rawValue = rawValue
+  }
+}
+
+extension Bell {
+  public static let b1 = Bell(uncheckedRawValue: 0x0)
+  public static let b2 = Bell(uncheckedRawValue: 0x1)
+  public static let b3 = Bell(uncheckedRawValue: 0x2)
+  public static let b4 = Bell(uncheckedRawValue: 0x3)
+  public static let b5 = Bell(uncheckedRawValue: 0x4)
+  public static let b6 = Bell(uncheckedRawValue: 0x5)
+  public static let b7 = Bell(uncheckedRawValue: 0x6)
+  public static let b8 = Bell(uncheckedRawValue: 0x7)
+  public static let b9 = Bell(uncheckedRawValue: 0x8)
+  public static let b0 = Bell(uncheckedRawValue: 0x9)
+  public static let bE = Bell(uncheckedRawValue: 0xA)
+  public static let bT = Bell(uncheckedRawValue: 0xB)
+  public static let bA = Bell(uncheckedRawValue: 0xC)
+  public static let bB = Bell(uncheckedRawValue: 0xD)
+  public static let bC = Bell(uncheckedRawValue: 0xE)
+  public static let bD = Bell(uncheckedRawValue: 0xF)
+}
+
+extension Bell {
+  /// Each bell's single-character symbol, indexed by raw value.
+  internal static let symbols: [Character] = Array("1234567890ETABCD")
+
+  /// Raw values indexed by ASCII code, or `noBell` for characters that
+  /// aren't a bell symbol.
+  private static let rawValuesByASCII: [UInt8] = {
+    var table = [UInt8](repeating: noBell, count: 128)
+    for (rawValue, symbol) in symbols.enumerated() {
+      table[Int(symbol.asciiValue!)] = UInt8(rawValue) // Safe: every symbol is ASCII
+    }
+    return table
+  }()
+  private static let noBell = UInt8.max
 }
 
 extension Bell: CustomStringConvertible {
   /// The single-character representation of this bell, e.g. "T" for bell 12.
   public var description: String {
-    switch self {
-    case .b1: "1"
-    case .b2: "2"
-    case .b3: "3"
-    case .b4: "4"
-    case .b5: "5"
-    case .b6: "6"
-    case .b7: "7"
-    case .b8: "8"
-    case .b9: "9"
-    case .b0: "0"
-    case .bE: "E"
-    case .bT: "T"
-    case .bA: "A"
-    case .bB: "B"
-    case .bC: "C"
-    case .bD: "D"
-    }
+    String(Bell.symbols[Int(rawValue)])
   }
 }
 
@@ -59,25 +94,10 @@ extension Bell {
   /// other character, rather than trapping like the ExpressibleByStringLiteral
   /// initializer -- use this when the character comes from untrusted input.
   public init?(character: Character) {
-    switch character {
-    case "1": self = .b1
-    case "2": self = .b2
-    case "3": self = .b3
-    case "4": self = .b4
-    case "5": self = .b5
-    case "6": self = .b6
-    case "7": self = .b7
-    case "8": self = .b8
-    case "9": self = .b9
-    case "0": self = .b0
-    case "E": self = .bE
-    case "T": self = .bT
-    case "A": self = .bA
-    case "B": self = .bB
-    case "C": self = .bC
-    case "D": self = .bD
-    default: return nil
-    }
+    guard let ascii = character.asciiValue else { return nil }
+    let rawValue = Bell.rawValuesByASCII[Int(ascii)]
+    guard rawValue != Bell.noBell else { return nil }
+    self.init(uncheckedRawValue: rawValue)
   }
 }
 
@@ -86,13 +106,14 @@ extension Bell {
   /// if `stage` has it. Returns nil otherwise, including for 0 and negative numbers.
   public init?(number: Int, on stage: Stage) {
     guard (1...stage.count).contains(number) else { return nil }
-    self.init(rawValue: UInt8(number - 1))
+    self.init(uncheckedRawValue: UInt8(number - 1))
   }
 
   /// Creates the bell numbered `number`, counting from 1 (e.g. 12 for `.bT`),
-  /// if any stage has it (1...16). Returns nil otherwise.
+  /// if any stage has it (1...`Stage.maxCount`). Returns nil otherwise.
   public init?(number: Int) {
-    self.init(number: number, on: .sixteen)
+    guard (1...Stage.maxCount).contains(number) else { return nil }
+    self.init(uncheckedRawValue: UInt8(number - 1))
   }
 
   /// This bell's number, counting from 1 (e.g. 12 for `.bT`).
@@ -112,7 +133,7 @@ extension Bell: Comparable {
 
 extension Bell: Codable {
   /// Encodes/decodes as its single-character representation (e.g. "T" for bell
-  /// 12), matching its string-literal form, not the raw enum value.
+  /// 12), matching its string-literal form, not the raw value.
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
     let string = try container.decode(String.self)
