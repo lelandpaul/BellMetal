@@ -1,0 +1,4 @@
+/.build*
+/.benchmarkBaselines
+/Package.resolved
+/.swiftpm
