@@ -29,6 +29,7 @@ struct PnParsingTests {
     // A change consisting solely of a letter must not be dropped entirely.
     #expect(try PNP.splitToChanges("E") == ["E"])
     #expect(try PNP.splitToChanges("x1E.T4x") == ["x", "1E", "T4", "x"])
+    #expect(try PNP.splitToChanges("x1N.FGx") == ["x", "1N", "FG", "x"])
   }
 
   @Test("splitToChanges throws on an unrecognized character instead of silently dropping it")
@@ -86,6 +87,16 @@ struct PnParsingTests {
     #expect(try PNP.inferStage(minor) == .minor)
     let withCrossChange = [[],[5]]
     #expect(try PNP.inferStage(withCrossChange) == .minor)
+    // The top place of each layout, which the old `< 16` bound rejected at 16.
+    #expect(try PNP.inferStage([[1, 16]]) == .sixteen)
+    #expect(try PNP.inferStage([[], [1, 16]]) == .sixteen)
+    #expect(try PNP.inferStage([[], [15]]) == .sixteen)
+    #expect(try PNP.inferStage([[], [17]]) == .eighteen)
+    #expect(try PNP.inferStage([[1, 24]]) == .twentyFour)
+    #expect(try PNP.inferStage([[], [23]]) == .twentyFour)
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.inferStage([[1, 25]])
+    }
   }
 
   @Test("inferStage throws when an all-cross change list carries no places to infer from")
@@ -157,32 +168,32 @@ struct PnParsingTests {
     let expectedX: Row = "21436587"
     let expected14: Row = "1324"
     let expected3: Row = "21354"
-    #expect(PNP.changeToRawRow([], at: .major) == expectedX.row)
-    #expect(PNP.changeToRawRow([1,4], at: .minimus) == expected14.row)
-    #expect(PNP.changeToRawRow([3], at: .doubles) == expected3.row)
+    #expect(PNP.changeToRawRow([], at: .major) == expectedX.narrow)
+    #expect(PNP.changeToRawRow([1,4], at: .minimus) == expected14.narrow)
+    #expect(PNP.changeToRawRow([3], at: .doubles) == expected3.narrow)
   }
   
   @Test("parseAllChanges parses a full notation string into its sequence of rows")
   func parseAllChanges() throws {
     let pb4 = "x4x4,2"
     let pb4_changes: [Row] = ["2143", "1324", "2143", "1324", "2143", "1324", "2143", "1243"]
-    #expect(try PNP.parseAllChanges(pb4).1 == pb4_changes.map(\.row))
+    #expect(try PNP.parseAllChanges(pb4).1 == .narrow(pb4_changes.map(\.narrow)))
     
     let g5 = "3,1.5.1.5.1"
     let g5_changes: [Row] = ["21354", "13254", "21435", "13254", "21435", "13254", "21435", "13254", "21435", "13254"]
-    #expect(try PNP.parseAllChanges(g5).1 == g5_changes.map(\.row))
+    #expect(try PNP.parseAllChanges(g5).1 == .narrow(g5_changes.map(\.narrow)))
   }
   
   @Test("PlaceNotation(string:) parses plain bob minimus and grandsire doubles correctly")
   func parsePN() throws {
     let pb4 = "x4x4,2"
     let pb4_changes: [Row] = ["2143", "1324", "2143", "1324", "2143", "1324", "2143", "1243"]
-    let expectedPb4 = PlaceNotation(stage: .minimus, changes: pb4_changes.map(\.row))
+    let expectedPb4 = PlaceNotation(stage: .minimus, changes: pb4_changes.map(\.narrow))
     #expect(try PlaceNotation(string: pb4) == expectedPb4)
 
     let g5 = "3,1.5.1.5.1"
     let g5_changes: [Row] = ["21354", "13254", "21435", "13254", "21435", "13254", "21435", "13254", "21435", "13254"]
-    let expectedG5 = PlaceNotation(stage: .doubles, changes: g5_changes.map(\.row))
+    let expectedG5 = PlaceNotation(stage: .doubles, changes: g5_changes.map(\.narrow))
     #expect(try PlaceNotation(string: g5) == expectedG5)
   }
 
@@ -216,6 +227,8 @@ struct PnParsingTests {
     #expect(try PNP.getExplicitStage("E:34").0 == .cinques)
     #expect(try PNP.getExplicitStage("T:x1T").0 == .maximus)
     #expect(try PNP.getExplicitStage("D:x1D").0 == .sixteen)
+    #expect(try PNP.getExplicitStage("F:x1F").0 == .seventeen)
+    #expect(try PNP.getExplicitStage("N:x1N").0 == .twentyFour)
     #expect(try PNP.getExplicitStage("no-prefix-here").0 == nil)
   }
 }

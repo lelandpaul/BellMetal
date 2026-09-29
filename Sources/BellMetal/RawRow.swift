@@ -3,11 +3,11 @@ import Foundation
 internal typealias RawRow = UInt64
 
 /// Various functions handling bit-packing on UInt64-representations
-/// of rows. Extracted here so that they can be shared between Row,
-/// Block, etc, which saves on instantiation costs in some operations.
-/// These are in general unsafe — checking for stage matching / etc.
-/// happens at the call site.
-extension RawRow {
+/// of rows (4 bits per bell, stages up to 16). Extracted here so that
+/// they can be shared between Row, Block, etc, which saves on
+/// instantiation costs in some operations. These are in general unsafe —
+/// checking for stage matching / etc. happens at the call site.
+extension RawRow: RawPermutation {
   /// Retrieve the raw bell number at a given zero-indexed position.
   internal func rawBell(at position: UInt8) -> UInt8 {
     return UInt8((self >> (4 * position)) & 0xF)
@@ -48,6 +48,13 @@ extension RawRow {
     return newRow
   }
 
+  /// Rounds at the given raw stage: every bell in its home position.
+  /// The full-stage constant, with the positions above `rawStage` masked
+  /// off.
+  internal static func rounds(rawStage: UInt8) -> RawRow {
+    0xFEDC_BA98_7654_3210 & (RawRow.max >> (4 * (15 - rawStage)))
+  }
+
   /// Handles multiplying two permutations. Performs no
   /// safety checks.
   internal func composePermutation(_ other: RawRow, rawStage: UInt8) -> RawRow {
@@ -62,7 +69,7 @@ extension RawRow {
   /// covers. Performs no safety checks.
   internal func extend(from: Stage, to: Stage) -> RawRow {
     let mask = UInt64.max << (4 * (from.rawValue + 1))
-    return self | (to.rounds.row & mask)
+    return self | (RawRow.rounds(rawStage: to.rawValue) & mask)
   }
   
   /// Performs a pairwise swap of the bell at rawPos and
@@ -80,7 +87,7 @@ extension RawRow {
   }
   
   /// Returns a list of (raw) bells that are in their home position.
-  var fixedBells: [UInt8] {
+  internal var fixedBells: [UInt8] {
     (0..<16)
       .map { UInt8($0) }
       .filter { self.rawBell(at: $0) == $0 }

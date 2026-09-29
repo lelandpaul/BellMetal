@@ -16,6 +16,13 @@ extension Array where Element: Equatable {
 }
 
 extension Array {
+  /// A copy with the elements in `range` replaced by `replacement`.
+  internal func replacingSubrange(_ range: Range<Int>, with replacement: Self) -> Self {
+    var copy = self
+    copy.replaceSubrange(range, with: replacement)
+    return copy
+  }
+
   /// Interleave two arrays, alternating one element of self and one element of other
   /// - Parameter other: The other array to interleave in
   /// - Returns: An interleaved array

@@ -9,12 +9,12 @@ struct RowTests {
   func instantiateWithStringLiteral() async throws {
     let a: Row = "14235"
     #expect(a.description == "14235")
-    #expect(a.row == 0x42130)
+    #expect(a.narrow == 0x42130)
     #expect(a.stage == .doubles)
     
     let b: Row = "2143658709TEBADC"
     #expect(b.description == "2143658709TEBADC")
-    #expect(b.row == 0xEFCDAB8967452301)
+    #expect(b.narrow == 0xEFCDAB8967452301)
     #expect(b.stage == .sixteen)
   }
   
@@ -22,12 +22,12 @@ struct RowTests {
   func instantiateWithArrayLiteral() async throws {
     let a: Row = [.b1, .b4, .b2, .b3, .b5]
     #expect(a.description == "14235")
-    #expect(a.row == 0x42130)
+    #expect(a.narrow == 0x42130)
     #expect(a.stage == .doubles)
     
     let b: Row = [.b2, .b1, .b4, .b3, .b6, .b5, .b8, .b7, .b0, .b9, .bT, .bE, .bB, .bA, .bD, .bC]
     #expect(b.description == "2143658709TEBADC")
-    #expect(b.row == 0xEFCDAB8967452301)
+    #expect(b.narrow == 0xEFCDAB8967452301)
     #expect(b.stage == .sixteen)
   }
 
@@ -84,11 +84,11 @@ struct RowTests {
   @Test("Raw and subscript position lookups agree on which bell sits at each position")
   func retrieveBellAtPostition() async throws {
     let a: Row = "14235"
-    #expect(a.row.rawBell(at: 0) == 0x0)
-    #expect(a.row.rawBell(at: 1) == 0x3)
-    #expect(a.row.rawBell(at: 2) == 0x1)
-    #expect(a.row.rawBell(at: 3) == 0x2)
-    #expect(a.row.rawBell(at: 4) == 0x4)
+    #expect(a.narrow.rawBell(at: 0) == 0x0)
+    #expect(a.narrow.rawBell(at: 1) == 0x3)
+    #expect(a.narrow.rawBell(at: 2) == 0x1)
+    #expect(a.narrow.rawBell(at: 3) == 0x2)
+    #expect(a.narrow.rawBell(at: 4) == 0x4)
 
     #expect(a[1] == .b1)
     #expect(a[2] == .b4)
@@ -100,11 +100,11 @@ struct RowTests {
   @Test("Raw and subscript bell lookups agree on which position each bell sits in")
   func retrievePositionofBell() async throws {
     let a: Row = "14235"
-    #expect(a.row.rawPosition(of: 0x0) == 0)
-    #expect(a.row.rawPosition(of: 0x1) == 2)
-    #expect(a.row.rawPosition(of: 0x2) == 3)
-    #expect(a.row.rawPosition(of: 0x3) == 1)
-    #expect(a.row.rawPosition(of: 0x4) == 4)
+    #expect(a.narrow.rawPosition(of: 0x0) == 0)
+    #expect(a.narrow.rawPosition(of: 0x1) == 2)
+    #expect(a.narrow.rawPosition(of: 0x2) == 3)
+    #expect(a.narrow.rawPosition(of: 0x3) == 1)
+    #expect(a.narrow.rawPosition(of: 0x4) == 4)
     
     #expect(a[.b1] == 1)
     #expect(a[.b2] == 3)
@@ -216,10 +216,10 @@ struct RowTests {
   @Test("swapUp(from:) swaps the pair of bells starting at the given raw position")
   func swap() async throws {
     let t_row: Row = "1234"
-    let t_raw = t_row.row
-    #expect(Row(stage: .minimus, row: t_raw.swapUp(from: 0)) == "2134")
-    #expect(Row(stage: .minimus, row: t_raw.swapUp(from: 1)) == "1324")
-    #expect(Row(stage: .minimus, row: t_raw.swapUp(from: 2)) == "1243")
+    let t_raw = t_row.narrow
+    #expect(Row(stage: .minimus, narrow: t_raw.swapUp(from: 0)) == "2134")
+    #expect(Row(stage: .minimus, narrow: t_raw.swapUp(from: 1)) == "1324")
+    #expect(Row(stage: .minimus, narrow: t_raw.swapUp(from: 2)) == "1243")
   }
 
   // MARK: Place bell orders

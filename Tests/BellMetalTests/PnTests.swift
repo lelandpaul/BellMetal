@@ -76,8 +76,8 @@ struct PlaceNotationTests {
   }
 
   @Test(
-    "A full cross notation ('x') round-trips to rounds when pricked at every stage, including the maximum (Sixteen)",
-    arguments: 1...16
+    "A full cross notation ('x') round-trips to rounds when pricked at every stage, including both layouts' maximums (Sixteen, Twenty-Four)",
+    arguments: 1...Stage.maxCount
   )
   func crossNotationRoundTripsAtEveryStage(bellCount: Int) throws {
     // Regression test for a bug where the row-composition underneath

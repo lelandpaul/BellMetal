@@ -8,11 +8,11 @@ import Foundation
 /// ``PlaceNotation`` directly.
 public enum PlaceNotationParser {
   
-  // `\d` only matches 0-9; place characters above bell 10 use E,T,A,B,C,D
-  // (see interpretPlace/representPlace), so they must be included explicitly
-  // or a compound change like "1T" gets split into "1" with the "T" silently lost.
+  // `\d` only matches 0-9; place characters above bell 10 are letters (see
+  // interpretPlace/representPlace), so they must be included explicitly or
+  // a compound change like "1T" gets split into "1" with the "T" silently lost.
   nonisolated(unsafe)
-  private static let changeRegex: Regex = /([0-9ETABCD]+|x|-)/
+  private static let changeRegex: Regex = /([0-9ETABCDFGHJKLMN]+|x|-)/
   
   /// Given a non-symmetric PN string, extract individual changes.
   /// Throws `.invalidPlaceNotation` if any character in `pn` isn't part of a
@@ -68,52 +68,28 @@ extension Array {
 extension PlaceNotationParser {
   
   /// Converts a single place character to its place number, e.g. "T" to 12,
-  /// using the same convention as `Bell`: "1"..."9", then "0", "E", "T", "A",
-  /// "B", "C", "D" for places 10 through 16. Returns nil for any other character.
+  /// using the same convention as `Bell`: "1"..."9", then "0", "E", "T",
+  /// "A"..."D", "F"..."H", "J"..."N" for places 10 through 24. Returns nil for
+  /// any other character.
   public static func interpretPlace(_ value: Character) -> Int? {
-    return switch value {
-    case "1": 1
-    case "2": 2
-    case "3": 3
-    case "4": 4
-    case "5": 5
-    case "6": 6
-    case "7": 7
-    case "8": 8
-    case "9": 9
-    case "0": 10
-    case "E": 11
-    case "T": 12
-    case "A": 13
-    case "B": 14
-    case "C": 15
-    case "D": 16
-    default: nil
-    }
+    Bell(character: value)?.number
   }
   
   /// Converts a place number to its single-character representation, e.g. 12
   /// to "T", using the same convention as `Bell`.
-  /// - Precondition: `value` must be between 1 and 16, inclusive.
+  /// - Precondition: `value` must be between 1 and `Stage.maxCount`, inclusive.
   public static func representPlace(_ value: UInt8) -> String {
-    return switch value {
-    case let x where x < 10: "\(x)"
-    case 10: "0"
-    case 11: "E"
-    case 12: "T"
-    case 13: "A"
-    case 14: "B"
-    case 15: "C"
-    case 16: "D"
-    default: fatalError("Invalid place: \(value)")
+    guard let bell = Bell(number: Int(value)) else {
+      fatalError("Invalid place: \(value)")
     }
+    return bell.description
   }
 
   /// Converts a place number to its single-character representation, e.g. 12
   /// to "T", using the same convention as `Bell`. Convenience overload of
   /// `representPlace(_:UInt8)` for callers working with `Int`, e.g. the
   /// place lists produced by `parsePlaces`/`inferExternalPlaces`.
-  /// - Precondition: `value` must be between 1 and 16, inclusive.
+  /// - Precondition: `value` must be between 1 and `Stage.maxCount`, inclusive.
   public static func representPlace(_ value: Int) -> String {
     representPlace(UInt8(value))
   }
@@ -159,7 +135,9 @@ extension PlaceNotationParser {
     let maxPlace = changes
       .compactMap { $0.max() }
       .max() ?? 0
-    guard maxPlace > 0 && maxPlace < 16 else {
+    // An odd highest place with a cross change means one more bell, which
+    // still fits: Stage.maxCount is even.
+    guard maxPlace > 0 && maxPlace <= Stage.maxCount else {
       throw BellMetalError.invalidPlaceNotation
     }
     let containsCrossChange = changes.contains([])
@@ -229,8 +207,8 @@ extension PlaceNotationParser {
     return (knownStage, adjustedChanges)
   }
   
-  internal static func changeToRawRow(_ places: [Int], at stage: Stage) -> RawRow {
-    var change = stage.rounds.row
+  internal static func changeToRawRow<R: RawLayout>(_ places: [Int], at stage: Stage) -> R {
+    var change = R.rounds(rawStage: stage.rawValue)
     var i = 0
     while i < stage.count - 1 {
       if places.contains(i+1) {
@@ -245,8 +223,9 @@ extension PlaceNotationParser {
   
   /// Parses an explicit stage prefix off the front of a place notation string,
   /// e.g. "6:12" (Minor) or "T:x1T" (Maximus, using the same single-character
-  /// convention as `Bell`: "1"..."9", then "0", "E", "T", "A", "B", "C", "D"
-  /// for stages 10 through 16). Returns `(nil, pn)` unchanged if there's no
+  /// convention as `Bell`: "1"..."9", then "0", "E", "T", "A"..."D",
+  /// "F"..."H", "J"..."N" for stages 10 through 24). Returns `(nil, pn)`
+  /// unchanged if there's no
   /// "stage:" prefix at all.
   public static func getExplicitStage(_ pn: String) throws -> (Stage?, String) {
     guard pn.contains(":") else { return (nil, pn) }
@@ -263,8 +242,11 @@ extension PlaceNotationParser {
   internal static func parseAllChanges(
     _ pn: String,
     at stage: Stage? = nil
-  ) throws -> (Stage, [RawRow]) {
+  ) throws -> (Stage, PlaceNotation.Changes) {
     let (knownStage, places) = try parseAllPlaces(pn, at: stage)
-    return (knownStage, places.map { changeToRawRow($0, at: knownStage) })
+    if knownStage.usesWideLayout {
+      return (knownStage, .wide(places.map { changeToRawRow($0, at: knownStage) }))
+    }
+    return (knownStage, .narrow(places.map { changeToRawRow($0, at: knownStage) }))
   }
 }

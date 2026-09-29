@@ -260,7 +260,7 @@ extension MusicType {
     case .major:
       ["xxxx1357", "xxxx2468", "xxxx3468", "xxxx3478", "xxxx3578", "xxxx7658", "x5x6x7x8", "xxxx5768", "xxxx7468", "xxxx7568", "xxxx8765"]
     case .caters:
-      ["xxxxx468", "xxxxx987", "xxxxx8495", "xxx97568", "xxx7x8x9x"]
+      ["xxxxxx468", "xxxxxx987", "xxxxx8495", "xxxx97568", "xxx7x8x9x"]
     case .royal:
       ["xxxxx24680", "xxxxx13579", "xxxx975680", "x6x7x8x9x0"]
     case .cinques:
@@ -270,7 +270,7 @@ extension MusicType {
     case .fourteen:
       ["xxxxxxxx4680TB", "xxxxxxxxAE90TB", "xxxxxxxExTxAxB"]
     case .sixteen:
-      ["xxxxxxxxxx4680TB", "xxxxxxxxxxAE90TB", "xxxxxxxxAxBxCxD"]
+      ["xxxxxxxxxx4680TB", "xxxxxxxxxxAE90TB", "xxxxxxxxxAxBxCxD"]
     default:
       []
     }
