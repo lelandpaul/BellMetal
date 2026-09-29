@@ -7,7 +7,7 @@ BellMetal represents rows as compact bit-packed values internally, but its publi
 API works entirely in terms of ordinary Swift value types and familiar ringing
 notation (`"14235"`, `"x18x18,12"`, `"xxxxxx78"`), so most day-to-day code doesn't
 need to think about the representation at all. It supports any stage from one to
-sixteen bells.
+twenty-four bells. Bells above 16 use the symbols `F G H J K L M N` (e.g. `"x1Nx1N,12"` on 24).
 
 ## Installation
 
@@ -15,7 +15,7 @@ Add BellMetal as a dependency in your `Package.swift`:
 
 ```swift
 dependencies: [
-  .package(url: "https://github.com/lelandpaul/BellMetal.git", from: "1.0.4")
+  .package(url: "https://github.com/lelandpaul/BellMetal.git", from: "2.0.0")
 ]
 ```
 
