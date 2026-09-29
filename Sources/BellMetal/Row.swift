@@ -9,8 +9,8 @@ public struct Row: Equatable, Hashable, Sendable {
   // - 17 to 24 bells: `lo` and `hi` are the row as a `WideRawRow`, with
   //   the stage packed into `hi`'s top 4 bits (which `WideRawRow` leaves
   //   0): bit 63 set, bits 60-62 the stage's raw value minus 16.
-  // Every unused bit is 0, so the synthesized Equatable and Hashable
-  // compare rows correctly.
+  // Every unused bit is 0, so the synthesized Equatable and the
+  // hash below, both over the raw words, treat rows correctly.
   private let lo: UInt64
   private let hi: UInt64
 
@@ -32,6 +32,14 @@ public struct Row: Equatable, Hashable, Sendable {
     self.hi = wide.hi
       | Row.wideFlag
       | UInt64(stage.rawValue - Stage.narrowMaxCount) << Row.wideStageShift
+  }
+
+  /// Hashes the two words mixed into one, rather than the synthesized
+  /// two separate combines: half the bytes through the hasher, which is
+  /// most of the cost of putting rows in a `Set`. Equal rows have equal
+  /// words, so they still hash equally.
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(lo ^ (hi &* 0x9E37_79B9_7F4A_7C15))
   }
 
   /// Whether this row uses the wide layout, i.e. has more than 16 bells.
