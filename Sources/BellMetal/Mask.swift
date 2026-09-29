@@ -17,6 +17,7 @@ public struct Mask: Sendable {
   }
   
   init(string: String) throws {
+    guard (1...Stage.maxCount).contains(string.count) else { throw BellMetalError.invalidMask }
     self.stage = Stage(string.count)
     var fixedPos: [Int: Bell] = [:]
     for (i, c) in string.enumerated() where c != "x" {

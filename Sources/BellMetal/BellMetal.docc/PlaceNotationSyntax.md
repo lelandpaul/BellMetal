@@ -16,7 +16,8 @@ try PlaceNotation(string: "x18x18,12")
 
 A place is written as the position it holds, using the same characters as
 ``Bell``: `1`-`9` for the first nine places, then `0`, `E`, `T`, `A`, `B`, `C`,
-`D` for places 10 through 16. Several places in the same change are written
+`D`, `F`, `G`, `H`, `J`, `K`, `L`, `M`, `N` for places 10 through 24. (`I`
+is skipped, as it's easily misread as `1`.) Several places in the same change are written
 together, e.g. `"14"` holds places 1 and 4 while everything between them
 crosses in pairs.
 
@@ -79,7 +80,7 @@ try PlaceNotation(string: "x", at: .minimus)
 
 or as a single-character prefix on the string itself, using the same
 character-per-bell convention as ``Bell`` -- `"1"`-`"9"`, then `"0"`, `"E"`,
-`"T"`, `"A"`, `"B"`, `"C"`, `"D"` for stages 10 through 16:
+`"T"`, `"A"`...`"D"`, `"F"`...`"H"`, `"J"`...`"N"` for stages 10 through 24:
 
 ```swift
 let lb6: PlaceNotation = "6:x4x4,2"   // Minor (6 bells)

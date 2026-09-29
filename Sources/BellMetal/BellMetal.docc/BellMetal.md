@@ -10,7 +10,7 @@ useful operations on top of them: pricking compositions from place notation,
 matching rows against patterns, and scoring the musicality of a touch.
 
 A ``Row`` is a permutation of bells, represented as a compact string like `"14235"`.
-Rows exist at a ``Stage`` (a number of bells, from one to sixteen), and multiplying
+Rows exist at a ``Stage`` (a number of bells, from one to twenty-four), and multiplying
 two rows together (`*`) composes them the way rows compose during ringing. A
 ``Block`` is an ordered sequence of rows -- typically the rows rung during a touch,
 or part of one.
