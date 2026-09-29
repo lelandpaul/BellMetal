@@ -226,9 +226,14 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(try course.count(matchingAny: inputs.masks))
       }
     }
-    Benchmark("MusicScheme.shared.score | \(label)") { benchmark in
-      for _ in benchmark.scaledIterations {
-        blackHole(MusicScheme.shared.score(course))
+    // BellMetal 1.x crashes scoring music from 10 bells up (a bad
+    // intermediate-change notation, fixed in 2.0), so only 2.0 measures it
+    // there.
+    if count < 10 || supportsWideStages {
+      Benchmark("MusicScheme.shared.score | \(label)") { benchmark in
+        for _ in benchmark.scaledIterations {
+          blackHole(MusicScheme.shared.score(course))
+        }
       }
     }
 

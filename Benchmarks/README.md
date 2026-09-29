@@ -1,7 +1,7 @@
 # BellMetal benchmarks
 
 Benchmarks for BellMetal's `Row`, `PlaceNotation`, `Block`, `Mask` and
-music scoring, using [package-benchmark](https://github.com/ordo-one/package-benchmark).
+music scoring, using [Benchmark](https://github.com/ordo-one/benchmark).
 They live in their own package, so the benchmark dependency never reaches
 the library.
 
