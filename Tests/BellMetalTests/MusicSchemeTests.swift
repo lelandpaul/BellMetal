@@ -42,9 +42,8 @@ struct MusicSchemeTests {
 
   @Test("Regression: MusicScheme.shared scores without trapping, including its NamedRow-based types")
   func sharedSchemeDoesNotCrash() {
-    // Regression test: MusicScheme.shared includes .wrap, which touches every
-    // NamedRow used by scoreWraps (rounds, backrounds, queens, tittums) -- all
-    // of which must be constructible without trapping.
+    // .wrap uses rounds, backrounds, queens and tittums, all of which must
+    // be constructible without trapping.
     _ = rounds.musicScore()
     _ = rounds.musicScoreDetails()
   }

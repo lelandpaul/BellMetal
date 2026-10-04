@@ -8,11 +8,11 @@ public enum NamedRow: Equatable, Hashable, CaseIterable, Sendable {
   case backrounds
   /// A "spread" variant of `tittums`, with the front half reversed.
   case explodedtittums
-  /// A well-known named row (defined per-stage, from Doubles upward).
+  /// A well-known named row, defined from Doubles to Sixteen.
   case hagdyke
   /// Rounds with the first and last bells fixed and every other adjacent pair swapped.
   case intermediate
-  /// A well-known named row (defined per-stage, from Doubles upward).
+  /// A well-known named row, defined from Doubles to Sixteen.
   case jacks
   /// `jacks` combined with the `intermediate` transposition.
   case jokers
@@ -150,9 +150,8 @@ extension NamedRow {
   }
   
   /// Treble (and, on even stages, tenor) fixed, every other pair crossing.
-  /// Parsed at `stage` explicitly: "1" alone would otherwise infer
-  /// Singles, and the tenor's place must be its symbol ("T"), not its
-  /// decimal count ("12").
+  /// Parsed at `stage` explicitly because "1" alone infers Singles, with
+  /// the tenor's place written as its symbol ("T"), not its count ("12").
   private func intermediateChange(at stage: Stage) -> PlaceNotation {
     let places = stage.even ? "1" + PlaceNotationParser.representPlace(stage.count) : "1"
     return try! PlaceNotation(string: places, at: stage) // Safe: a valid change on every stage

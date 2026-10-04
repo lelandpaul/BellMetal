@@ -8,18 +8,15 @@ import Foundation
 /// ``PlaceNotation`` directly.
 public enum PlaceNotationParser {
   
-  // `\d` only matches 0-9; place characters above bell 10 are letters (see
-  // interpretPlace/representPlace), so they must be included explicitly or
-  // a compound change like "1T" gets split into "1" with the "T" silently lost.
+  // Places above 10 are letters (see interpretPlace/representPlace), so the
+  // class lists them rather than using `\d`.
   nonisolated(unsafe)
   private static let changeRegex: Regex = /([0-9ETABCDFGHJKLMN]+|x|-)/
   
   /// Given a non-symmetric PN string, extract individual changes.
   /// Throws `.invalidPlaceNotation` if any character in `pn` isn't part of a
   /// recognized token (a place run, "x", or "-") or the "." separator
-  /// between tokens -- e.g. an unrecognized character like "Z" would
-  /// otherwise be silently skipped by the tokenizer instead of being
-  /// reported.
+  /// between tokens.
   public static func splitToChanges(_ pn: String) throws -> [String] {
     var tokens: [String] = []
     var consumedUpTo = pn.startIndex
@@ -63,7 +60,7 @@ extension Array {
   }
 }
 
-// MARK: - Interpretting individual changes
+// MARK: - Interpreting individual changes
 
 extension PlaceNotationParser {
   
@@ -170,14 +167,11 @@ extension PlaceNotationParser {
     return adjustedChange
   }
 
-  /// Validates that a fully-resolved change (after `inferExternalPlaces`) is
-  /// structurally well-formed: its places start on an odd-numbered position
-  /// and strictly alternate odd/even thereafter. This is what guarantees
-  /// every unlisted position -- before the first place, between two listed
-  /// places, and after the last -- has an even number of bells left to pair
-  /// up and cross. A change like `"128"` on Major (places 1, 2, 8) breaks
-  /// this (2 and 8 are both even, back to back) and must be rejected rather
-  /// than silently accepted with place 3..7 crossing incorrectly.
+  /// Validates that a fully-resolved change (after `inferExternalPlaces`)
+  /// starts on an odd place and strictly alternates odd/even, which is what
+  /// leaves every unlisted run of positions an even number of bells to pair
+  /// up and cross. `"128"` on Major (2 and 8 both even, back to back)
+  /// fails this and is rejected.
   /// Throws `.invalidPlaceNotation` if the sequence doesn't alternate.
   public static func validateAlternatingParity(_ places: [Int]) throws {
     for (index, place) in places.enumerated() {
@@ -225,8 +219,7 @@ extension PlaceNotationParser {
   /// e.g. "6:12" (Minor) or "T:x1T" (Maximus, using the same single-character
   /// convention as `Bell`: "1"..."9", then "0", "E", "T", "A"..."D",
   /// "F"..."H", "J"..."N" for stages 10 through 24). Returns `(nil, pn)`
-  /// unchanged if there's no
-  /// "stage:" prefix at all.
+  /// unchanged if there's no "stage:" prefix.
   public static func getExplicitStage(_ pn: String) throws -> (Stage?, String) {
     guard pn.contains(":") else { return (nil, pn) }
     let splits = pn.split(separator: ":")

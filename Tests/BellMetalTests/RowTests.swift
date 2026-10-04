@@ -171,13 +171,10 @@ struct RowTests {
 
   @Test("Multiplication and invert() are correct at Sixteen specifically, not just non-crashing")
   func multiplicationAndInverseAtSixteen() async throws {
-    // Regression test for a bug where RawRow.composePermutation and
-    // Row.invert() both trapped at Stage.sixteen (rawStage == 15): each
-    // built its result by loading bells at the top of the register and
-    // correcting with a right-shift of `4*(14 - rawStage)`, computed in
-    // unsigned arithmetic -- which underflowed exactly at rawStage == 15.
-    // Every adjacent pair swapped (the first change of a full "x" cross)
-    // is its own inverse: applying it twice is the identity.
+    // Sixteen is the largest narrow stage (rawStage == 15), where a
+    // stage-dependent shift in RawRow.build would underflow. Every adjacent
+    // pair swapped (the first change of a full "x" cross) is its own
+    // inverse: applying it twice is the identity.
     let x: Row = "2143658709TEBADC"
     #expect(x.stage == .sixteen)
     #expect(x * x == Stage.sixteen.rounds)

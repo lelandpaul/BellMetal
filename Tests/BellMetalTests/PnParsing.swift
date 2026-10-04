@@ -51,9 +51,7 @@ struct PnParsingTests {
   @Test("Regression: letter places parse without losing made places to place inference")
   func placeNotationRoundTripWithLetterPlaces() throws {
     // Places 2, 11 (E), and 12 (T) made explicit on Maximus; inference adds
-    // place 1 (since place 2 is even) leaving {1,2,11,12} made overall.
-    // Before the tokenizer recognized letter places, "2E" parsed as "2" alone,
-    // silently losing the made place at 11 and 12 and producing the wrong row.
+    // place 1 (since place 2 is even), leaving {1,2,11,12} made overall.
     let pn = try PlaceNotation(string: "2E", at: .maximus)
     #expect(pn.leadhead == "1243658709ET")
   }
@@ -87,7 +85,7 @@ struct PnParsingTests {
     #expect(try PNP.inferStage(minor) == .minor)
     let withCrossChange = [[],[5]]
     #expect(try PNP.inferStage(withCrossChange) == .minor)
-    // The top place of each layout, which the old `< 16` bound rejected at 16.
+    // The top place of each layout.
     #expect(try PNP.inferStage([[1, 16]]) == .sixteen)
     #expect(try PNP.inferStage([[], [1, 16]]) == .sixteen)
     #expect(try PNP.inferStage([[], [15]]) == .sixteen)
@@ -144,9 +142,8 @@ struct PnParsingTests {
 
   @Test("parseAllPlaces throws on a change whose places don't strictly alternate odd/even")
   func parseAllPlacesRejectsNonAlternatingChange() {
-    // "128" on Major: 1, 2, 8 are already both external places (1st and
-    // 8th), so inferExternalPlaces has nothing to add -- this used to parse
-    // without error to the wrong row instead of being rejected.
+    // "128" on Major: 1 and 8 are already external places, so
+    // inferExternalPlaces adds nothing and only the parity check catches it.
     #expect(throws: BellMetalError.invalidPlaceNotation) {
       try PNP.parseAllPlaces("128", at: .major)
     }
