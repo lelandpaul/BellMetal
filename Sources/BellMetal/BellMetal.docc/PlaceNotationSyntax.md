@@ -83,6 +83,6 @@ character-per-bell convention as ``Bell`` -- `"1"`-`"9"`, then `"0"`, `"E"`,
 `"T"`, `"A"`...`"D"`, `"F"`...`"H"`, `"J"`...`"N"` for stages 10 through 24:
 
 ```swift
-let lb6: PlaceNotation = "6:x4x4,2"   // Minor (6 bells)
+let minor: PlaceNotation = "6:x4x4,2"   // Minor (6 bells)
 let maximus: PlaceNotation = "T:x1T"  // Maximus (12 bells)
 ```

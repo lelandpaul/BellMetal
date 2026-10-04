@@ -77,3 +77,7 @@ Run the test suite with:
 ```bash
 swift test
 ```
+
+`docs/design/row-storage.md` describes how rows, blocks and place notation are stored (a single `UInt64` up
+to 16 bells, two words above), `docs/design/plan.md` lists the open work, and `Benchmarks/` holds the
+benchmark package (see its README).

@@ -1,8 +1,8 @@
 import Foundation
 
 /// A scheme for scoring the musicality of a block.
-/// The default, `.shared`, mimics [CompLib](complib.org)'s
-/// default music scheme as far as possible. `\Block.musicScore`
+/// The default, `.shared`, mimics [CompLib](https://complib.org)'s
+/// default music scheme as far as possible. `Block.musicScore`
 /// uses `.shared` by default.
 public struct MusicScheme: Sendable {
   let scheme: [(type: MusicType, weight: Int)]
@@ -13,7 +13,7 @@ public struct MusicScheme: Sendable {
     self.scheme = scheme
   }
 
-  /// The default scheme, mimicking [CompLib](complib.org)'s as closely as possible.
+  /// The default scheme, mimicking [CompLib](https://complib.org)'s as closely as possible.
   public static let shared: MusicScheme = .init([
     (type: .fiveSix, weight: 1),
     (type: .cru, weight: 1),

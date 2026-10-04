@@ -5,9 +5,12 @@ music scoring, using [Benchmark](https://github.com/ordo-one/benchmark).
 They live in their own package, so the benchmark dependency never reaches
 the library.
 
-The benchmark source uses only API that BellMetal 1.x and 2.0 share, so the
+The benchmark source uses only API that BellMetal 1.x and 2.x share, so the
 same code can measure two versions against each other. Benchmarks for stages
-above 16 register only when the BellMetal being measured supports them.
+above 16 register only when the BellMetal being measured supports them
+(`Stage(rawValue: 16)` exists). Each benchmark runs at 6, 8, 12 and 16 bells,
+and at 17, 18, 22 and 24 where supported, on Plain Bob and 64 seeded random
+rows, in release builds.
 
 ## Requirements
 

@@ -80,10 +80,7 @@ struct PlaceNotationTests {
     arguments: 1...Stage.maxCount
   )
   func crossNotationRoundTripsAtEveryStage(bellCount: Int) throws {
-    // Regression test for a bug where the row-composition underneath
-    // pricking (RawRow.composePermutation) trapped at Stage.sixteen -- the
-    // very case that surfaced it: pricking "x" at every other stage
-    // already worked, so only the maximum stage would have caught this.
+    // Includes Stage.sixteen, where row composition once trapped.
     let stage = Stage(bellCount)
     let cross = try PlaceNotation(string: "x", at: stage)
     let course = try cross.prick(repeat: .untilRound)
