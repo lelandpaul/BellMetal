@@ -49,6 +49,18 @@ struct StageTests {
     }
   }
 
+  @Test("tenorPair is the two heaviest bells and includes(_:) accepts exactly the stage's bells")
+  func tenorPairAndIncludes() {
+    #expect(Stage.two.tenorPair == (.b1, .b2))
+    #expect(Stage.major.tenorPair == (.b7, .b8))
+    #expect(Stage.twentyFour.tenorPair == (.bM, .bN))
+    #expect(Stage.major.includes(.b1))
+    #expect(Stage.major.includes(.b8))
+    #expect(!Stage.major.includes(.b9))
+    #expect(Stage.one.includes(.b1))
+    #expect(!Stage.one.includes(.b2))
+  }
+
   @Test("Stage stays a single byte")
   func layout() {
     #expect(MemoryLayout<Stage>.size == 1)
