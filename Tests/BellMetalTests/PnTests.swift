@@ -15,10 +15,9 @@ struct PlaceNotationTests {
     "3412",
     "3142",
     "1324",
-    "1342"
+    "1342",
   ]
   
-
   @Test("description finds a palindromic split and falls back to a flat notation string otherwise")
   func representation() async throws {
     #expect(pb4.description == "x14x14,12")
@@ -52,7 +51,7 @@ struct PlaceNotationTests {
       "2143",
       "2413",
       "4231",
-      "4213"
+      "4213",
     ]
     
     #expect(pricked == expected)

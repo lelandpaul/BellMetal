@@ -134,7 +134,7 @@ extension MusicType {
       front + "56" + back,
       front + "65" + back,
       "56" + back + front,
-      "65" + back + front
+      "65" + back + front,
     ].compactMap { try? Mask(string: $0) }
     return (try? rows.count(matchingAny: masks)) ?? 0
   }
@@ -176,7 +176,7 @@ extension MusicType {
       "4578xxxx",
       "5478xxxx",
       "4678xxxx",
-      "6478xxxx"
+      "6478xxxx",
       ]
     return (try? rows.count(matchingAny: masks)) ?? 0
   }
@@ -233,7 +233,7 @@ extension MusicType {
       "xxxx8765",
       "8765xxxx",
       "xxxx7568",
-      "7568xxxx"
+      "7568xxxx",
     ]
     return (try? rows.count(matchingAny: masks)) ?? 0
   }
@@ -289,7 +289,6 @@ extension MusicType {
     }
   }
 }
-
 
 extension MusicType: CustomStringConvertible {
   public var description: String {

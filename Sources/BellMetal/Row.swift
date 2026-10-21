@@ -200,7 +200,6 @@ extension Row {
     return Bell(uncheckedRawValue: rawBell(at: UInt8(position - 1))) // Safe: Checked when row is built
   }
   
-  
   /// Retrieve the 1-indexed position of a bell in the row.
   public subscript(bell: Bell) -> Int {
     precondition(self.stage.includes(bell), "Invalid bell for stage \(self.stage): \(bell)")
@@ -275,9 +274,9 @@ extension Row {
 }
 
 precedencegroup ExponentialPrecedence {
-  higherThan : MultiplicationPrecedence
-  lowerThan : BitwiseShiftPrecedence
-  associativity : left
+  higherThan: MultiplicationPrecedence
+  lowerThan: BitwiseShiftPrecedence
+  associativity: left
 }
 infix operator **: ExponentialPrecedence
 
@@ -286,7 +285,6 @@ extension Row {
     lhs.pow(rhs)
   }
 }
-
 
 // MARK: - Other
 

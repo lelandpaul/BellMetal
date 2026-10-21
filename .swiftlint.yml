@@ -16,10 +16,9 @@ identifier_name:
   min_length: 1
   allowed_symbols: ["_"]
 
-# Multi-line literals are split about evenly between having and omitting a trailing comma,
-# so neither form is the house style here.
-disabled_rules:
-  - trailing_comma
+# Multi-line collection literals always end in a comma, as in the other repos.
+trailing_comma:
+  mandatory_comma: true
 
 # Code stays within 140 columns; longer lines are @Test descriptions and stage lists.
 line_length:

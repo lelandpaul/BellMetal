@@ -70,7 +70,7 @@ struct RowTests {
     #expect(Bell(character: "Z") == nil)
   }
 
-  //MARK: Subscripts
+  // MARK: Subscripts
 
   @Test("bell(at:) returns the bell at a 1-indexed position, or nil out of range")
   func bellAtPosition() {

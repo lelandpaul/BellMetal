@@ -83,7 +83,7 @@ extension NamedRow {
     case .kings:
       return kings(at: stage)
     case .princes:
-      return Row([2,1] + (3...stage.count)) * kings(at: stage)
+      return Row([2, 1] + (3...stage.count)) * kings(at: stage)
     case .princesses:
       let half = (stage.count + 1) / 2
       return queens(at: stage) * Row((1..<half) + [half+1, half] + (half+2...stage.count))
@@ -98,7 +98,7 @@ extension NamedRow {
       return Row(upper.interleave(with: lower))
     case .whittingtons:
       guard stage > .doubles, stage < .cinques else { return nil }
-      let array = ([1,2] + Array(3...stage.count)
+      let array = ([1, 2] + Array(3...stage.count)
         .partitionMap(on: { $0.isMultiple(of: 2) }) { evens, odds in
           odds.reversed() + evens
         }
@@ -171,4 +171,3 @@ extension NamedRow {
       })
   }
 }
-

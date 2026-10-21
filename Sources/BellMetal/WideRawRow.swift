@@ -9,11 +9,6 @@ internal struct WideRawRow: Hashable, Sendable {
   internal var lo: UInt64
   internal var hi: UInt64
 
-  internal init(lo: UInt64, hi: UInt64) {
-    self.lo = lo
-    self.hi = hi
-  }
-
   internal static let zero = WideRawRow(lo: 0, hi: 0)
 
   private static let bitsPerBell: UInt64 = 5

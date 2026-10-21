@@ -247,7 +247,6 @@ extension Block {
   }
 }
 
-
 // MARK: - Operations
 
 extension Block {

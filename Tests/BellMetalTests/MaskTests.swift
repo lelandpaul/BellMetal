@@ -59,7 +59,7 @@ struct RowGenTests {
     let rows = mask.allMatchingRows().collect()
     #expect(rows == [
       "1234",
-      "1243"
+      "1243",
     ])
   }
 }

@@ -11,7 +11,7 @@ struct BlockTests {
     let block = Block([
       "1234",
       "2143",
-      "2413"
+      "2413",
     ])
     #expect(block.count == 3)
     #expect(block.uniqueCount == 3)
@@ -28,7 +28,7 @@ struct BlockTests {
     let block: Block = [
       "1234",
       "2143",
-      "2413"
+      "2413",
     ]
     #expect(block.count == 3)
     #expect(block.uniqueCount == 3)
@@ -54,11 +54,11 @@ struct BlockTests {
   func singleBlockTruth() {
     let trueBlock: Block = [
       "1234",
-      "2143"
+      "2143",
     ]
     let falseBlock: Block = [
       "1234",
-      "1234"
+      "1234",
     ]
 
     #expect(trueBlock.isTrue)
@@ -69,15 +69,15 @@ struct BlockTests {
   func multiBlockTruth() throws {
     let blockA: Block = [
       "1234",
-      "2143"
+      "2143",
     ]
     let blockB: Block = [
       "4321",
-      "3412"
+      "3412",
     ]
     let blockC: Block = [
       "1234",
-      "1243"
+      "1243",
     ]
     #expect(try blockA.isTrue(against: blockB))
     #expect(try !blockA.isTrue(against: blockC))
@@ -100,7 +100,7 @@ struct BlockTests {
 
     let expectedTransposed: Block = [
       "4321",
-      "3412"
+      "3412",
     ]
 
     #expect(try block.transpose(by: transposeBy) == expectedTransposed)
@@ -116,7 +116,7 @@ struct BlockTests {
       "3412",
       "3142",
       "1324",
-      "1342"
+      "1342",
     ]
 
     let pb4_expected_second_lead: Block = [
@@ -127,7 +127,7 @@ struct BlockTests {
       "4213",
       "4123",
       "1432",
-      "1423"
+      "1423",
     ]
 
     let pb4_second_lead: Block = try pb4_first_lead.transpose(by: pb4_first_lead.last)
@@ -144,7 +144,7 @@ struct BlockTests {
     let extended = try block.extend(to: .minor)
     let expected: Block = [
       "123456",
-      "214356"
+      "214356",
     ]
     #expect(extended == expected)
   }
