@@ -51,8 +51,17 @@ extension PlaceNotation: Hashable {
 }
 
 extension PlaceNotation: ExpressibleByStringLiteral {
+  /// Creates place notation from a literal, e.g. "x16x16x16,12", with its
+  /// stage inferred or given as a prefix ("6:x1x1x1,2").
+  /// - Precondition: the string must be valid place notation -- see
+  /// `init(string:at:)` for the throwing equivalent, which is safe to use on
+  /// untrusted input.
   public init(stringLiteral value: StringLiteralType) {
-    try! self.init(string: value)
+    do {
+      try self.init(string: value)
+    } catch {
+      preconditionFailure("Invalid place notation literal \"\(value)\": \(error)")
+    }
   }
 }
 
@@ -207,9 +216,11 @@ extension PlaceNotation {
   }
   
   private func prickOneRepetition<R: RawLayout>(_ row: R, changes: [R]) -> [R] {
-    Array(changes.reduce(into: [row]) { into, new in
-      into.append(into.last!.composePermutation(new, rawStage: stage.rawValue))
-    }.dropFirst())
+    var current = row
+    return changes.map { change in
+      current = current.composePermutation(change, rawStage: stage.rawValue)
+      return current
+    }
   }
   
   /// Prick this place notation starting from a given row. The place notation
@@ -248,9 +259,11 @@ extension PlaceNotation {
   ) -> Block {
     var rawRows = [row]
     var rawRowsSet = Set(rawRows)
+    var lastRow = row
     var repetitions: UInt = 0
     repeat {
-      let newRows = prickOneRepetition(rawRows.last!, changes: changes)
+      let newRows = prickOneRepetition(lastRow, changes: changes)
+      lastRow = newRows.last ?? lastRow
       rawRows += newRows
       rawRowsSet.insert(contentsOf: newRows)
       repetitions += 1
@@ -346,7 +359,8 @@ extension PlaceNotation {
   /// The user is responsible for not mismatching stages.
   public static func + (lhs: PlaceNotation, rhs: PlaceNotation) -> PlaceNotation {
     precondition(lhs.stage == rhs.stage, "Stages don't match: \(lhs) + \(rhs)")
-    return try! lhs.concatenate(with: rhs)
+    // swiftlint:disable:next force_try
+    return try! lhs.concatenate(with: rhs) // Safe: Checked by precondition.
   }
 }
 

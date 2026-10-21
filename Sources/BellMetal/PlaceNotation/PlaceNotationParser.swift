@@ -149,18 +149,18 @@ extension PlaceNotationParser {
   /// lowest explicit place is even, and the last place if the highest
   /// explicit place doesn't already share the stage's parity.
   public static func inferExternalPlaces(_ change: [Int], at stage: Stage) -> [Int] {
-    guard !change.isEmpty else {
+    guard let lowest = change.first, let highest = change.last else {
       return switch stage.even {
       case true: []
       case false: [stage.count]
       }
     }
     var adjustedChange = change
-    if change.first!.isMultiple(of: 2) {
+    if lowest.isMultiple(of: 2) {
       // Lowest place made is always odd, add 1st
       adjustedChange.insert(1, at: 0)
     }
-    if change.last!.isMultiple(of: 2) != stage.even {
+    if highest.isMultiple(of: 2) != stage.even {
       // Highest place must be same parity as stage, add nth
       adjustedChange.append(stage.count)
     }
@@ -180,14 +180,26 @@ extension PlaceNotationParser {
       guard isOdd == expectOdd else { throw BellMetalError.invalidPlaceNotation }
     }
   }
+
+  /// Validates that every place in a change is a place of `stage`, in
+  /// ascending order. Neither is caught by `validateAlternatingParity`:
+  /// `"18"` on Minor (8 has the right parity for the last place) and `"41"`
+  /// (which alternates once its external places are added) are rejected here.
+  /// Throws `.invalidPlaceNotation` if a place is outside the stage or out of order.
+  public static func validatePlaces(_ places: [Int], at stage: Stage) throws {
+    guard places.allSatisfy({ (1...stage.count).contains($0) }),
+          zip(places, places.dropFirst()).allSatisfy({ $0 < $1 })
+    else { throw BellMetalError.invalidPlaceNotation }
+  }
   
   /// Fully parses a place notation string (expanding palindromes and implicit
   /// places) into its stage and the explicit places held by each change, in
   /// order. Pass `stage` if it's known; otherwise it's inferred (see
   /// `inferStage`) and may throw if it can't be. Throws `.invalidPlaceNotation`
   /// if any resulting change isn't structurally valid (see
-  /// `validateAlternatingParity`) -- e.g. `"128"` on Major, which has two
-  /// even places (2 and 8) back to back.
+  /// `validateAlternatingParity` and `validatePlaces`) -- e.g. `"128"` on
+  /// Major, which has two even places (2 and 8) back to back, or `"18"` on
+  /// Minor, which makes a place the stage doesn't have.
   public static func parseAllPlaces(
     _ pn: String,
     at stage: Stage? = nil
@@ -196,7 +208,10 @@ extension PlaceNotationParser {
       .map(parsePlaces)
     let knownStage = try stage ?? inferStage(changes)
     let adjustedChanges = changes.map { inferExternalPlaces($0, at: knownStage) }
-    try adjustedChanges.forEach(validateAlternatingParity)
+    for change in adjustedChanges {
+      try validateAlternatingParity(change)
+      try validatePlaces(change, at: knownStage)
+    }
     return (knownStage, adjustedChanges)
   }
   
