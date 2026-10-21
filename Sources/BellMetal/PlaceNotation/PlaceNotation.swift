@@ -1,6 +1,5 @@
 import Foundation
 
-
 /// A segment of place notation at some stage.
 public struct PlaceNotation: Sendable {
   /// The stage this place notation is written at.
@@ -100,10 +99,9 @@ extension PlaceNotation: CustomStringConvertible {
   /// of of two palindromes that together make up the full sequence of changes.
   private static func findPalindromicSplit<R: RawLayout>(_ changes: [R]) -> ([R], [R])? {
     for i in changes.indices {
-      let (a,b) = (Array(changes[...i]), Array(changes[(i+1)...]))
+      let (a, b) = (Array(changes[...i]), Array(changes[(i+1)...]))
       if let ap = a.reduceOddPalindrome(),
-         let bp = b.reduceOddPalindrome()
-      {
+         let bp = b.reduceOddPalindrome() {
         return (ap, bp)
       }
     }
@@ -126,8 +124,7 @@ extension PlaceNotation: CustomStringConvertible {
     while let nextChange = strings.popLast() {
       if let lastChange = complete.last,
          lastChange != "x",
-         nextChange != "x"
-      {
+         nextChange != "x" {
         complete.append(".")
       }
       complete.append(nextChange)
@@ -143,7 +140,7 @@ extension PlaceNotation: CustomStringConvertible {
   }
 
   private static func describe<R: RawLayout>(_ changes: [R]) -> String {
-    if let (a,b) = findPalindromicSplit(changes) {
+    if let (a, b) = findPalindromicSplit(changes) {
       return changesToString(a) + "," + changesToString(b)
     }
     return changesToString(changes)
@@ -153,7 +150,7 @@ extension PlaceNotation: CustomStringConvertible {
 extension PlaceNotation {
   /// Applies a place notation's overall transposition (its `leadhead`) to a row.
   /// - Precondition: `lhs` and `rhs` must share a stage.
-  public static func *(lhs: Row, rhs: PlaceNotation) -> Row {
+  public static func * (lhs: Row, rhs: PlaceNotation) -> Row {
     precondition(lhs.stage == rhs.stage)
     return lhs * rhs.leadhead
   }
@@ -283,6 +280,14 @@ extension PlaceNotation {
     switch changes {
     case .narrow(let changes): changes.count
     case .wide(let changes): changes.count
+    }
+  }
+
+  /// Whether this place notation has no changes.
+  public var isEmpty: Bool {
+    switch changes {
+    case .narrow(let changes): changes.isEmpty
+    case .wide(let changes): changes.isEmpty
     }
   }
   

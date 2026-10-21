@@ -44,7 +44,7 @@ public enum PlaceNotationParser {
   /// ``PlaceNotation`` for the palindrome syntax). Throws
   /// `.invalidPlaceNotation` if any section contains an unrecognized
   /// character (see `splitToChanges`).
-  public static func splitAndExpandPalindrome(_ pn:String) throws -> [String] {
+  public static func splitAndExpandPalindrome(_ pn: String) throws -> [String] {
     guard pn.contains(",") else {
       return try splitToChanges(pn)
     }
@@ -149,7 +149,7 @@ extension PlaceNotationParser {
   /// lowest explicit place is even, and the last place if the highest
   /// explicit place doesn't already share the stage's parity.
   public static func inferExternalPlaces(_ change: [Int], at stage: Stage) -> [Int] {
-    guard change.count > 0 else {
+    guard !change.isEmpty else {
       return switch stage.even {
       case true: []
       case false: [stage.count]
@@ -181,7 +181,6 @@ extension PlaceNotationParser {
     }
   }
   
-
   /// Fully parses a place notation string (expanding palindromes and implicit
   /// places) into its stage and the explicit places held by each change, in
   /// order. Pass `stage` if it's known; otherwise it's inferred (see

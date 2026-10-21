@@ -1,7 +1,6 @@
 import Foundation
 import Algorithms
 
-
 extension Mask {
   
   /// Return an Iterator over all possible rows at the same stage as the Mask

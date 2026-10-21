@@ -200,7 +200,6 @@ extension Row {
     return Bell(uncheckedRawValue: rawBell(at: UInt8(position - 1))) // Safe: Checked when row is built
   }
   
-  
   /// Retrieve the 1-indexed position of a bell in the row.
   public subscript(bell: Bell) -> Int {
     precondition(self.stage.includes(bell), "Invalid bell for stage \(self.stage): \(bell)")
@@ -232,6 +231,12 @@ extension Row {
     precondition(lhs.stage == rhs.stage, "Stages don't match: \(lhs) * \(rhs)")
     return try! lhs.multiply(by: rhs) // Safe: Checked by precondition.
   }
+
+  /// Unsafe, non-throwing multiplication in place.
+  /// The user is responsible for not mismatching stages.
+  public static func *= (lhs: inout Row, rhs: Row) {
+    lhs = lhs * rhs
+  }
 }
 
 extension Row {
@@ -252,7 +257,7 @@ extension Row {
     precondition(power > 0, "Tried to raise to a non-positive power with internal function.")
     var newRow = self
     for _ in 1..<power {
-      newRow = newRow * self
+      newRow *= self
     }
     return newRow
   }
@@ -275,9 +280,9 @@ extension Row {
 }
 
 precedencegroup ExponentialPrecedence {
-  higherThan : MultiplicationPrecedence
-  lowerThan : BitwiseShiftPrecedence
-  associativity : left
+  higherThan: MultiplicationPrecedence
+  lowerThan: BitwiseShiftPrecedence
+  associativity: left
 }
 infix operator **: ExponentialPrecedence
 
@@ -286,7 +291,6 @@ extension Row {
     lhs.pow(rhs)
   }
 }
-
 
 // MARK: - Other
 

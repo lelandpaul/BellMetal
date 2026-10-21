@@ -1,0 +1,5 @@
+# Test code may force-unwrap and force-try: a failure there should stop the test, and an
+# unwrap that turns out nil fails it as plainly as an assertion would.
+disabled_rules:
+  - force_unwrapping
+  - force_try
