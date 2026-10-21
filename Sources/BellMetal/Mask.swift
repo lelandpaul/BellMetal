@@ -52,7 +52,11 @@ extension Mask: ExpressibleByStringLiteral {
   /// - Precondition: the string must be a valid mask -- see `init(string:)`
   /// for the throwing equivalent, which is safe to use on untrusted input.
   public init(stringLiteral value: StringLiteralType) {
-    try! self.init(string: value)
+    do {
+      try self.init(string: value)
+    } catch {
+      preconditionFailure("Invalid mask literal \"\(value)\": \(error)")
+    }
   }
 }
 

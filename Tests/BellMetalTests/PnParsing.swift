@@ -149,6 +149,29 @@ struct PnParsingTests {
     }
   }
 
+  @Test("parseAllPlaces throws on a place above the given stage")
+  func parseAllPlacesRejectsPlaceAboveStage() {
+    // 8 is the right parity for Minor's last place, so nothing else catches it.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.parseAllPlaces("18", at: .minor)
+    }
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PlaceNotation(string: "x18", at: .minor)
+    }
+  }
+
+  @Test("parseAllPlaces throws on a change whose places aren't in ascending order", arguments: [
+    ("41", nil),
+    ("41", Stage.minor),
+    ("x3214", Stage.minor),
+  ] as [(String, Stage?)])
+  func parseAllPlacesRejectsUnsortedPlaces(pn: String, stage: Stage?) {
+    // Each of these alternates odd/even once the external places are added.
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.parseAllPlaces(pn, at: stage)
+    }
+  }
+
   @Test("parseAllPlaces parses a full notation string into its per-change place lists")
   func parseAllPlaces() throws {
     let pb4 = "x4x4,2"

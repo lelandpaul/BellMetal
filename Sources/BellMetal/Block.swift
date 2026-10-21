@@ -307,6 +307,7 @@ extension Block {
   /// Concatenate two blocks. Caller is responsible for ensuring stage matching.
   public static func + (lhs: Block, rhs: Block) -> Block {
     precondition(lhs.stage == rhs.stage, "Mismatched stages: \(lhs.stage) & \(rhs.stage)")
+    // swiftlint:disable:next force_try
     return try! lhs.concatenate(rhs) // Safe: Checked by precondition.
   }
 
