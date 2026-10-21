@@ -181,14 +181,15 @@ extension PlaceNotationParser {
     }
   }
 
-  /// Validates that every place in a change is a place of `stage`. `"18"` on
-  /// Minor fails this and is rejected: 8 has the right parity for Minor's
-  /// last place, so `validateAlternatingParity` doesn't catch it.
-  /// Throws `.invalidPlaceNotation` if a place is outside the stage.
+  /// Validates that every place in a change is a place of `stage`, in
+  /// ascending order. Neither is caught by `validateAlternatingParity`:
+  /// `"18"` on Minor (8 has the right parity for the last place) and `"41"`
+  /// (which alternates once its external places are added) are rejected here.
+  /// Throws `.invalidPlaceNotation` if a place is outside the stage or out of order.
   public static func validatePlaces(_ places: [Int], at stage: Stage) throws {
-    guard places.allSatisfy({ (1...stage.count).contains($0) }) else {
-      throw BellMetalError.invalidPlaceNotation
-    }
+    guard places.allSatisfy({ (1...stage.count).contains($0) }),
+          zip(places, places.dropFirst()).allSatisfy({ $0 < $1 })
+    else { throw BellMetalError.invalidPlaceNotation }
   }
   
   /// Fully parses a place notation string (expanding palindromes and implicit
