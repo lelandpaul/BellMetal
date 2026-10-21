@@ -282,6 +282,14 @@ extension PlaceNotation {
     case .wide(let changes): changes.count
     }
   }
+
+  /// Whether this place notation has no changes.
+  public var isEmpty: Bool {
+    switch changes {
+    case .narrow(let changes): changes.isEmpty
+    case .wide(let changes): changes.isEmpty
+    }
+  }
   
   /// The total transposition reached by this place notation.
   public var leadhead: Row {

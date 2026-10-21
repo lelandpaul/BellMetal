@@ -231,6 +231,12 @@ extension Row {
     precondition(lhs.stage == rhs.stage, "Stages don't match: \(lhs) * \(rhs)")
     return try! lhs.multiply(by: rhs) // Safe: Checked by precondition.
   }
+
+  /// Unsafe, non-throwing multiplication in place.
+  /// The user is responsible for not mismatching stages.
+  public static func *= (lhs: inout Row, rhs: Row) {
+    lhs = lhs * rhs
+  }
 }
 
 extension Row {
@@ -251,7 +257,7 @@ extension Row {
     precondition(power > 0, "Tried to raise to a non-positive power with internal function.")
     var newRow = self
     for _ in 1..<power {
-      newRow = newRow * self
+      newRow *= self
     }
     return newRow
   }
