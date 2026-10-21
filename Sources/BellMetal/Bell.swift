@@ -59,6 +59,7 @@ extension Bell {
   private static let rawValuesByASCII: [UInt8] = {
     var table = [UInt8](repeating: noBell, count: 128)
     for (rawValue, symbol) in symbols.enumerated() {
+      // swiftlint:disable:next force_unwrapping
       table[Int(symbol.asciiValue!)] = UInt8(rawValue) // Safe: every symbol is ASCII
     }
     return table

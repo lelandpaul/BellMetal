@@ -51,8 +51,17 @@ extension PlaceNotation: Hashable {
 }
 
 extension PlaceNotation: ExpressibleByStringLiteral {
+  /// Creates place notation from a literal, e.g. "x16x16x16,12", with its
+  /// stage inferred or given as a prefix ("6:x1x1x1,2").
+  /// - Precondition: the string must be valid place notation -- see
+  /// `init(string:at:)` for the throwing equivalent, which is safe to use on
+  /// untrusted input.
   public init(stringLiteral value: StringLiteralType) {
-    try! self.init(string: value)
+    do {
+      try self.init(string: value)
+    } catch {
+      preconditionFailure("Invalid place notation literal \"\(value)\": \(error)")
+    }
   }
 }
 
@@ -350,7 +359,8 @@ extension PlaceNotation {
   /// The user is responsible for not mismatching stages.
   public static func + (lhs: PlaceNotation, rhs: PlaceNotation) -> PlaceNotation {
     precondition(lhs.stage == rhs.stage, "Stages don't match: \(lhs) + \(rhs)")
-    return try! lhs.concatenate(with: rhs)
+    // swiftlint:disable:next force_try
+    return try! lhs.concatenate(with: rhs) // Safe: Checked by precondition.
   }
 }
 

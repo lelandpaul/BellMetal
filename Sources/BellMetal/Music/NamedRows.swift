@@ -154,6 +154,7 @@ extension NamedRow {
   /// the tenor's place written as its symbol ("T"), not its count ("12").
   private func intermediateChange(at stage: Stage) -> PlaceNotation {
     let places = stage.even ? "1" + PlaceNotationParser.representPlace(stage.count) : "1"
+    // swiftlint:disable:next force_try
     return try! PlaceNotation(string: places, at: stage) // Safe: a valid change on every stage
   }
   
