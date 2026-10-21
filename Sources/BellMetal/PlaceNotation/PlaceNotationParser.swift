@@ -180,14 +180,25 @@ extension PlaceNotationParser {
       guard isOdd == expectOdd else { throw BellMetalError.invalidPlaceNotation }
     }
   }
+
+  /// Validates that every place in a change is a place of `stage`. `"18"` on
+  /// Minor fails this and is rejected: 8 has the right parity for Minor's
+  /// last place, so `validateAlternatingParity` doesn't catch it.
+  /// Throws `.invalidPlaceNotation` if a place is outside the stage.
+  public static func validatePlaces(_ places: [Int], at stage: Stage) throws {
+    guard places.allSatisfy({ (1...stage.count).contains($0) }) else {
+      throw BellMetalError.invalidPlaceNotation
+    }
+  }
   
   /// Fully parses a place notation string (expanding palindromes and implicit
   /// places) into its stage and the explicit places held by each change, in
   /// order. Pass `stage` if it's known; otherwise it's inferred (see
   /// `inferStage`) and may throw if it can't be. Throws `.invalidPlaceNotation`
   /// if any resulting change isn't structurally valid (see
-  /// `validateAlternatingParity`) -- e.g. `"128"` on Major, which has two
-  /// even places (2 and 8) back to back.
+  /// `validateAlternatingParity` and `validatePlaces`) -- e.g. `"128"` on
+  /// Major, which has two even places (2 and 8) back to back, or `"18"` on
+  /// Minor, which makes a place the stage doesn't have.
   public static func parseAllPlaces(
     _ pn: String,
     at stage: Stage? = nil
@@ -196,7 +207,10 @@ extension PlaceNotationParser {
       .map(parsePlaces)
     let knownStage = try stage ?? inferStage(changes)
     let adjustedChanges = changes.map { inferExternalPlaces($0, at: knownStage) }
-    try adjustedChanges.forEach(validateAlternatingParity)
+    for change in adjustedChanges {
+      try validateAlternatingParity(change)
+      try validatePlaces(change, at: knownStage)
+    }
     return (knownStage, adjustedChanges)
   }
   
