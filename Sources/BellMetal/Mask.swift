@@ -11,7 +11,7 @@ public struct Mask: Sendable {
   let stage: Stage
   let fixedPos: [Int: Bell]
   
-  internal init(stage: Stage, fixedPos: [Int : Bell]) {
+  internal init(stage: Stage, fixedPos: [Int: Bell]) {
     self.stage = stage
     self.fixedPos = fixedPos
   }

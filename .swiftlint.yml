@@ -1,0 +1,37 @@
+excluded:
+  - .build
+  - .swiftpm
+  - Benchmarks/.build
+  - Benchmarks/.swiftpm
+
+opt_in_rules:
+  - force_unwrapping
+  - weak_delegate
+  - unowned_variable_capture
+  - empty_count
+
+# Short names are deliberate: bells (`b5`, `bT`), place notation (`pn`), `to:` labels, operands
+# (`a`, `b`) and indices. Tests use snake_case names for fixtures (`pb4_first_lead`).
+identifier_name:
+  min_length: 1
+  allowed_symbols: ["_"]
+
+# Multi-line collection literals always end in a comma, as in the other repos.
+trailing_comma:
+  mandatory_comma: true
+
+# Code stays within 140 columns; longer lines are @Test descriptions and stage lists.
+line_length:
+  warning: 140
+  error: 200
+
+# Blank lines inside indented blocks keep their indentation; flag only trailing spaces after code.
+trailing_whitespace:
+  ignores_empty_lines: true
+
+# Named rows and music types are flat switches over row names and stages; count branching outside them.
+cyclomatic_complexity:
+  ignores_case_statements: true
+
+empty_count:
+  severity: warning

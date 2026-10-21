@@ -51,16 +51,14 @@ struct PnParsingTests {
   @Test("Regression: letter places parse without losing made places to place inference")
   func placeNotationRoundTripWithLetterPlaces() throws {
     // Places 2, 11 (E), and 12 (T) made explicit on Maximus; inference adds
-    // place 1 (since place 2 is even) leaving {1,2,11,12} made overall.
-    // Before the tokenizer recognized letter places, "2E" parsed as "2" alone,
-    // silently losing the made place at 11 and 12 and producing the wrong row.
+    // place 1 (since place 2 is even), leaving {1,2,11,12} made overall.
     let pn = try PlaceNotation(string: "2E", at: .maximus)
     #expect(pn.leadhead == "1243658709ET")
   }
 
   @Test("makePalindrome mirrors an array about its last element")
   func palindromeHelper() {
-    #expect([1,2,3].makePalindrome() == [1,2,3,2,1])
+    #expect([1, 2, 3].makePalindrome() == [1, 2, 3, 2, 1])
     #expect([1].makePalindrome() == [1])
   }
   
@@ -75,19 +73,19 @@ struct PnParsingTests {
     #expect(try PNP.splitAndExpandPalindrome(grandsire5) == expected_g5)
 
     let test = "x12,56.18"
-    let expected_test = ["x","12","x","56","18","56"]
+    let expected_test = ["x", "12", "x", "56", "18", "56"]
     #expect(try PNP.splitAndExpandPalindrome(test) == expected_test)
   }
   
   @Test("inferStage picks the smallest stage consistent with the given places")
   func inferStage() throws {
-    let doubles = [[5],[1],[5],[1],[5]]
+    let doubles = [[5], [1], [5], [1], [5]]
     #expect(try PNP.inferStage(doubles) == .doubles)
-    let minor = [[1,2],[3,4],[5,6],[1,2]]
+    let minor = [[1, 2], [3, 4], [5, 6], [1, 2]]
     #expect(try PNP.inferStage(minor) == .minor)
-    let withCrossChange = [[],[5]]
+    let withCrossChange = [[], [5]]
     #expect(try PNP.inferStage(withCrossChange) == .minor)
-    // The top place of each layout, which the old `< 16` bound rejected at 16.
+    // The top place of each layout.
     #expect(try PNP.inferStage([[1, 16]]) == .sixteen)
     #expect(try PNP.inferStage([[], [1, 16]]) == .sixteen)
     #expect(try PNP.inferStage([[], [15]]) == .sixteen)
@@ -109,9 +107,9 @@ struct PnParsingTests {
   
   @Test("inferExternalPlaces adds the implied places at the stage's edges")
   func inferExternalPlaces() {
-    #expect(PNP.inferExternalPlaces([4], at: .minor) == [1,4])
-    #expect(PNP.inferExternalPlaces([3], at: .minor) == [3,6])
-    #expect(PNP.inferExternalPlaces([2], at: .doubles) == [1,2,5])
+    #expect(PNP.inferExternalPlaces([4], at: .minor) == [1, 4])
+    #expect(PNP.inferExternalPlaces([3], at: .minor) == [3, 6])
+    #expect(PNP.inferExternalPlaces([2], at: .doubles) == [1, 2, 5])
     #expect(PNP.inferExternalPlaces([], at: .minor) == [])
     #expect(PNP.inferExternalPlaces([], at: .doubles) == [5])
   }
@@ -144,9 +142,8 @@ struct PnParsingTests {
 
   @Test("parseAllPlaces throws on a change whose places don't strictly alternate odd/even")
   func parseAllPlacesRejectsNonAlternatingChange() {
-    // "128" on Major: 1, 2, 8 are already both external places (1st and
-    // 8th), so inferExternalPlaces has nothing to add -- this used to parse
-    // without error to the wrong row instead of being rejected.
+    // "128" on Major: 1 and 8 are already external places, so
+    // inferExternalPlaces adds nothing and only the parity check catches it.
     #expect(throws: BellMetalError.invalidPlaceNotation) {
       try PNP.parseAllPlaces("128", at: .major)
     }
@@ -155,11 +152,11 @@ struct PnParsingTests {
   @Test("parseAllPlaces parses a full notation string into its per-change place lists")
   func parseAllPlaces() throws {
     let pb4 = "x4x4,2"
-    let pb4_places = [[],[1,4],[],[1,4],[],[1,4],[],[1,2]]
+    let pb4_places = [[], [1, 4], [], [1, 4], [], [1, 4], [], [1, 2]]
     #expect(try PNP.parseAllPlaces(pb4).1 == pb4_places)
     
     let g5 = "3,1.5.1.5.1"
-    let g5_places = [[3],[1],[5],[1],[5],[1],[5],[1],[5],[1]]
+    let g5_places = [[3], [1], [5], [1], [5], [1], [5], [1], [5], [1]]
     #expect(try PNP.parseAllPlaces(g5).1 == g5_places)
   }
   
@@ -169,7 +166,7 @@ struct PnParsingTests {
     let expected14: Row = "1324"
     let expected3: Row = "21354"
     #expect(PNP.changeToRawRow([], at: .major) == expectedX.narrow)
-    #expect(PNP.changeToRawRow([1,4], at: .minimus) == expected14.narrow)
+    #expect(PNP.changeToRawRow([1, 4], at: .minimus) == expected14.narrow)
     #expect(PNP.changeToRawRow([3], at: .doubles) == expected3.narrow)
   }
   
@@ -232,4 +229,3 @@ struct PnParsingTests {
     #expect(try PNP.getExplicitStage("no-prefix-here").0 == nil)
   }
 }
-

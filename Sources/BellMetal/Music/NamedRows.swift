@@ -8,11 +8,11 @@ public enum NamedRow: Equatable, Hashable, CaseIterable, Sendable {
   case backrounds
   /// A "spread" variant of `tittums`, with the front half reversed.
   case explodedtittums
-  /// A well-known named row (defined per-stage, from Doubles upward).
+  /// A well-known named row, defined from Doubles to Sixteen.
   case hagdyke
   /// Rounds with the first and last bells fixed and every other adjacent pair swapped.
   case intermediate
-  /// A well-known named row (defined per-stage, from Doubles upward).
+  /// A well-known named row, defined from Doubles to Sixteen.
   case jacks
   /// `jacks` combined with the `intermediate` transposition.
   case jokers
@@ -83,7 +83,7 @@ extension NamedRow {
     case .kings:
       return kings(at: stage)
     case .princes:
-      return Row([2,1] + (3...stage.count)) * kings(at: stage)
+      return Row([2, 1] + (3...stage.count)) * kings(at: stage)
     case .princesses:
       let half = (stage.count + 1) / 2
       return queens(at: stage) * Row((1..<half) + [half+1, half] + (half+2...stage.count))
@@ -98,7 +98,7 @@ extension NamedRow {
       return Row(upper.interleave(with: lower))
     case .whittingtons:
       guard stage > .doubles, stage < .cinques else { return nil }
-      let array = ([1,2] + Array(3...stage.count)
+      let array = ([1, 2] + Array(3...stage.count)
         .partitionMap(on: { $0.isMultiple(of: 2) }) { evens, odds in
           odds.reversed() + evens
         }
@@ -150,9 +150,8 @@ extension NamedRow {
   }
   
   /// Treble (and, on even stages, tenor) fixed, every other pair crossing.
-  /// Parsed at `stage` explicitly: "1" alone would otherwise infer
-  /// Singles, and the tenor's place must be its symbol ("T"), not its
-  /// decimal count ("12").
+  /// Parsed at `stage` explicitly because "1" alone infers Singles, with
+  /// the tenor's place written as its symbol ("T"), not its count ("12").
   private func intermediateChange(at stage: Stage) -> PlaceNotation {
     let places = stage.even ? "1" + PlaceNotationParser.representPlace(stage.count) : "1"
     return try! PlaceNotation(string: places, at: stage) // Safe: a valid change on every stage
@@ -172,4 +171,3 @@ extension NamedRow {
       })
   }
 }
-

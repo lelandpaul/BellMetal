@@ -1,6 +1,5 @@
 import Foundation
 
-
 /// A segment of place notation at some stage.
 public struct PlaceNotation: Sendable {
   /// The stage this place notation is written at.
@@ -100,10 +99,9 @@ extension PlaceNotation: CustomStringConvertible {
   /// of of two palindromes that together make up the full sequence of changes.
   private static func findPalindromicSplit<R: RawLayout>(_ changes: [R]) -> ([R], [R])? {
     for i in changes.indices {
-      let (a,b) = (Array(changes[...i]), Array(changes[(i+1)...]))
+      let (a, b) = (Array(changes[...i]), Array(changes[(i+1)...]))
       if let ap = a.reduceOddPalindrome(),
-         let bp = b.reduceOddPalindrome()
-      {
+         let bp = b.reduceOddPalindrome() {
         return (ap, bp)
       }
     }
@@ -126,8 +124,7 @@ extension PlaceNotation: CustomStringConvertible {
     while let nextChange = strings.popLast() {
       if let lastChange = complete.last,
          lastChange != "x",
-         nextChange != "x"
-      {
+         nextChange != "x" {
         complete.append(".")
       }
       complete.append(nextChange)
@@ -143,7 +140,7 @@ extension PlaceNotation: CustomStringConvertible {
   }
 
   private static func describe<R: RawLayout>(_ changes: [R]) -> String {
-    if let (a,b) = findPalindromicSplit(changes) {
+    if let (a, b) = findPalindromicSplit(changes) {
       return changesToString(a) + "," + changesToString(b)
     }
     return changesToString(changes)
@@ -153,7 +150,7 @@ extension PlaceNotation: CustomStringConvertible {
 extension PlaceNotation {
   /// Applies a place notation's overall transposition (its `leadhead`) to a row.
   /// - Precondition: `lhs` and `rhs` must share a stage.
-  public static func *(lhs: Row, rhs: PlaceNotation) -> Row {
+  public static func * (lhs: Row, rhs: PlaceNotation) -> Row {
     precondition(lhs.stage == rhs.stage)
     return lhs * rhs.leadhead
   }
@@ -285,6 +282,14 @@ extension PlaceNotation {
     case .wide(let changes): changes.count
     }
   }
+
+  /// Whether this place notation has no changes.
+  public var isEmpty: Bool {
+    switch changes {
+    case .narrow(let changes): changes.isEmpty
+    case .wide(let changes): changes.isEmpty
+    }
+  }
   
   /// The total transposition reached by this place notation.
   public var leadhead: Row {
@@ -303,21 +308,11 @@ extension PlaceNotation {
 
 // MARK: - Stage change
 extension PlaceNotation {
-  /// Covers this place notation up to `newStage` by adding cover bells --
-  /// the place-notation-level equivalent of `Row.extend(to:)`/
-  /// `Block.extend(to:)`, but extending the *notation* itself rather than
-  /// each row it produces: every change gains an implicit place at every
-  /// new position, so a bell rung there never moves, in any row this
-  /// notation ever pricks -- not just the ones already computed.
-  ///
-  /// Each change is already stored internally as a `RawRow` -- the same
-  /// permutation representation a `Row` itself uses, composed onto the
-  /// current row one change at a time by `prick(at:keeping:repeat:)` --
-  /// so extending a change and extending a row are the literal same
-  /// operation: `RawRow.extend(from:to:)` already leaves every new
-  /// position mapped to itself (its own `rounds` bit pattern), which is
-  /// exactly "this bell doesn't move" whether the row it's applied to is
-  /// a whole row or one change's own permutation.
+  /// Covers this place notation up to `newStage` by adding cover bells.
+  /// Unlike `Row.extend(to:)` and `Block.extend(to:)`, which extend rows
+  /// already produced, this extends the *notation*: every change gains an
+  /// implicit place at each new position, so the covers never move in any
+  /// row it later pricks.
   /// - Throws: `BellMetalError.invalidStage` if `newStage` isn't strictly
   ///   higher than this place notation's own stage.
   public func covered(at newStage: Stage) throws -> PlaceNotation {

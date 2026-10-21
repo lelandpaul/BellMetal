@@ -129,11 +129,7 @@ struct ErrorsTests {
 
   @Test("Regression: PlaceNotation throws on an unrecognized character instead of silently dropping it")
   func placeNotationThrowsOnUnrecognizedCharacters() {
-    // The top-level tokenizer (PlaceNotationParser.splitToChanges) used to only
-    // ever extract digit runs, "x", or "-", silently skipping any other
-    // character (e.g. "Z") rather than throwing -- so "1Z3" parsed as two
-    // separate one-place changes ("1", "3") instead of surfacing the
-    // unrecognized "Z".
+    // "1Z3" must not parse as the two changes "1" and "3".
     #expect(throws: BellMetalError.invalidPlaceNotation) {
       try PlaceNotation(string: "1Z3")
     }
@@ -141,12 +137,9 @@ struct ErrorsTests {
 
   @Test("Regression: a change whose places don't strictly alternate odd/even is rejected instead of silently mis-parsed")
   func placeNotationThrowsOnNonAlternatingPlaces() {
-    // "128" on Major (places 1, 2, 8) has two even places (2, 8) back to
-    // back with nothing alternating between them -- structurally invalid
-    // place notation, since it leaves places 3-7 with no consistent way to
-    // pair up and cross. This used to parse without error (both 1 and 8 are
-    // already the stage's external places, so inferExternalPlaces had
-    // nothing to add) and silently produce the wrong row.
+    // "128" on Major has two even places (2, 8) back to back, which leaves
+    // places 3-7 with no consistent way to pair up and cross. Both 1 and 8
+    // are already external places, so inference adds nothing to catch it.
     #expect(throws: BellMetalError.invalidPlaceNotation) {
       try PlaceNotation(string: "128", at: .major)
     }

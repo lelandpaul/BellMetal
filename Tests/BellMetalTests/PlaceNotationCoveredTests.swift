@@ -59,11 +59,8 @@ struct PlaceNotationCoveredTests {
         arguments: 1...15
     )
     func coveringWorksFromEveryStageUpToSixteen(bellCount: Int) throws {
-        // Regression coverage for the same bit-packing territory that
-        // trapped at Stage.sixteen before (RawRow.composePermutation,
-        // fixed in Row/Block.extend's own RawRow.extend) -- covered(at:)
-        // leans on that same RawRow.extend, so it's worth the same
-        // exhaustive check, not just a single spot-checked stage pair.
+        // Every source stage, not a spot check: covered(at:) relies on
+        // RawRow.extend, whose bit arithmetic is sensitive to the stage.
         let fromStage = Stage(bellCount)
         let notation = fromStage.even
             ? try PlaceNotation(string: "x", at: fromStage)

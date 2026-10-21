@@ -182,6 +182,14 @@ extension Block {
     case .wide(let raw): raw.rows.count
     }
   }
+
+  /// Whether the block has no rows.
+  public var isEmpty: Bool {
+    switch storage {
+    case .narrow(let raw): raw.rows.isEmpty
+    case .wide(let raw): raw.rows.isEmpty
+    }
+  }
   /// The number of distinct rows in the block, i.e. `count` minus any repeats.
   public var uniqueCount: Int {
     switch storage {
@@ -247,7 +255,6 @@ extension Block {
   }
 }
 
-
 // MARK: - Operations
 
 extension Block {
@@ -301,6 +308,11 @@ extension Block {
   public static func + (lhs: Block, rhs: Block) -> Block {
     precondition(lhs.stage == rhs.stage, "Mismatched stages: \(lhs.stage) & \(rhs.stage)")
     return try! lhs.concatenate(rhs) // Safe: Checked by precondition.
+  }
+
+  /// Concatenate a block onto this one. Caller is responsible for ensuring stage matching.
+  public static func += (lhs: inout Block, rhs: Block) {
+    lhs = lhs + rhs
   }
 
   /// Append one or more rows to this block.

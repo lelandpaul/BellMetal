@@ -2,11 +2,9 @@ import Foundation
 
 internal typealias RawRow = UInt64
 
-/// Various functions handling bit-packing on UInt64-representations
-/// of rows (4 bits per bell, stages up to 16). Extracted here so that
-/// they can be shared between Row, Block, etc, which saves on
-/// instantiation costs in some operations. These are in general unsafe —
-/// checking for stage matching / etc. happens at the call site.
+/// Bit-packing on `UInt64` rows (4 bits per bell, stages up to 16),
+/// shared by Row, Block and PlaceNotation. Unsafe: stage checks happen at
+/// the call site.
 extension RawRow: RawPermutation {
   /// Retrieve the raw bell number at a given zero-indexed position.
   internal func rawBell(at position: UInt8) -> UInt8 {
@@ -14,7 +12,7 @@ extension RawRow: RawPermutation {
   }
 
   /// Retrieves the raw (0-indexed) position of a given raw (0-indexed)
-  /// bell. Performs no safety checks.
+  /// bell, or nil if it isn't present.
   internal func rawPosition(of bell: UInt8) -> UInt8? {
     var bells = self
     for i in 0..<16 {
@@ -27,19 +25,11 @@ extension RawRow: RawPermutation {
   }
 
   /// Builds a `RawRow` by placing `value(position)` at nibble `position`,
-  /// for every position from 0 through `rawStage`. The one loop shape
-  /// `composePermutation` and `Row.invert()` both need: compute one bell
-  /// per position, place it directly there.
+  /// for every position from 0 through `rawStage`.
   ///
-  /// Placing each nibble straight at its own final position, rather than
-  /// loading it at the top of the register and correcting afterward by a
-  /// stage-dependent right-shift, is what keeps this correct at every
-  /// stage, including the maximum (`rawStage == 15`, `Stage.sixteen`): the
-  /// old top-loaded formulation's correction shift was `4*(14 - rawStage)`,
-  /// computed in unsigned arithmetic, which underflowed and trapped
-  /// exactly at `rawStage == 15`. Direct placement needs no such
-  /// correction at all -- `4 * position` is always `0...60`, comfortably
-  /// inside a 64-bit register for every representable stage.
+  /// Each nibble goes straight to its final position, with no
+  /// stage-dependent shift to correct afterwards: such a shift underflows
+  /// (and traps) at the maximum stage, `rawStage == 15`.
   internal static func build(rawStage: UInt8, value: (UInt8) -> UInt8) -> RawRow {
     var newRow: RawRow = .zero
     for position in 0...rawStage {
@@ -55,8 +45,7 @@ extension RawRow: RawPermutation {
     0xFEDC_BA98_7654_3210 & (RawRow.max >> (4 * (15 - rawStage)))
   }
 
-  /// Handles multiplying two permutations. Performs no
-  /// safety checks.
+  /// Multiplies two permutations.
   internal func composePermutation(_ other: RawRow, rawStage: UInt8) -> RawRow {
     var indices = other
     return RawRow.build(rawStage: rawStage) { _ in
@@ -65,15 +54,13 @@ extension RawRow: RawPermutation {
     }
   }
   
-  /// Handles extending a row up to a higher stage by appending
-  /// covers. Performs no safety checks.
+  /// Extends a row up to a higher stage by appending covers.
   internal func extend(from: Stage, to: Stage) -> RawRow {
     let mask = UInt64.max << (4 * (from.rawValue + 1))
     return self | (RawRow.rounds(rawStage: to.rawValue) & mask)
   }
   
-  /// Performs a pairwise swap of the bell at rawPos and
-  /// the bell one place higher than it. Performs no safety checks.
+  /// Swaps the bell at `rawPos` with the bell one place higher.
   internal func swapUp(from rawPos: UInt8) -> RawRow {
     let mask: RawRow = 0xF << (4 * rawPos)
     let lowerBell: RawRow = (self & mask)
@@ -86,7 +73,7 @@ extension RawRow: RawPermutation {
     return newRow
   }
   
-  /// Returns a list of (raw) bells that are in their home position.
+  /// The (raw) bells that are in their home position.
   internal var fixedBells: [UInt8] {
     (0..<16)
       .map { UInt8($0) }
