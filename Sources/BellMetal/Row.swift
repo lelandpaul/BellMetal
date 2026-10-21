@@ -229,6 +229,7 @@ extension Row {
   /// The user is responsible for not mismatching stages.
   public static func * (lhs: Row, rhs: Row) -> Row {
     precondition(lhs.stage == rhs.stage, "Stages don't match: \(lhs) * \(rhs)")
+    // swiftlint:disable:next force_try
     return try! lhs.multiply(by: rhs) // Safe: Checked by precondition.
   }
 
@@ -244,11 +245,14 @@ extension Row {
   /// x.multiply(by: x.invert) == stage.rounds
   public func invert() -> Row {
     let stage = self.stage
+    // Safe to unwrap: a row holds every bell of its stage.
     if isWide {
       let wide = self.wide
+      // swiftlint:disable:next force_unwrapping
       return Row(stage: stage, wide: .build(rawStage: stage.rawValue) { wide.rawPosition(of: $0)! })
     }
     let narrow = self.narrow
+    // swiftlint:disable:next force_unwrapping
     return Row(stage: stage, narrow: .build(rawStage: stage.rawValue) { narrow.rawPosition(of: $0)! })
   }
   
@@ -353,6 +357,7 @@ extension Row {
       repeat {
         seen[place] = true
         order.append(place + 1)
+        // swiftlint:disable:next force_unwrapping
         place = Int(rawPosition(of: UInt8(place))!) // Safe: every bell of the stage is present
       } while place != start
       orders.append(order)
