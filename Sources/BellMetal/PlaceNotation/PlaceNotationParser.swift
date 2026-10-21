@@ -149,18 +149,18 @@ extension PlaceNotationParser {
   /// lowest explicit place is even, and the last place if the highest
   /// explicit place doesn't already share the stage's parity.
   public static func inferExternalPlaces(_ change: [Int], at stage: Stage) -> [Int] {
-    guard !change.isEmpty else {
+    guard let lowest = change.first, let highest = change.last else {
       return switch stage.even {
       case true: []
       case false: [stage.count]
       }
     }
     var adjustedChange = change
-    if change.first!.isMultiple(of: 2) {
+    if lowest.isMultiple(of: 2) {
       // Lowest place made is always odd, add 1st
       adjustedChange.insert(1, at: 0)
     }
-    if change.last!.isMultiple(of: 2) != stage.even {
+    if highest.isMultiple(of: 2) != stage.even {
       // Highest place must be same parity as stage, add nth
       adjustedChange.append(stage.count)
     }

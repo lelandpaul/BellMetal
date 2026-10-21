@@ -207,9 +207,11 @@ extension PlaceNotation {
   }
   
   private func prickOneRepetition<R: RawLayout>(_ row: R, changes: [R]) -> [R] {
-    Array(changes.reduce(into: [row]) { into, new in
-      into.append(into.last!.composePermutation(new, rawStage: stage.rawValue))
-    }.dropFirst())
+    var current = row
+    return changes.map { change in
+      current = current.composePermutation(change, rawStage: stage.rawValue)
+      return current
+    }
   }
   
   /// Prick this place notation starting from a given row. The place notation
@@ -248,9 +250,11 @@ extension PlaceNotation {
   ) -> Block {
     var rawRows = [row]
     var rawRowsSet = Set(rawRows)
+    var lastRow = row
     var repetitions: UInt = 0
     repeat {
-      let newRows = prickOneRepetition(rawRows.last!, changes: changes)
+      let newRows = prickOneRepetition(lastRow, changes: changes)
+      lastRow = newRows.last ?? lastRow
       rawRows += newRows
       rawRowsSet.insert(contentsOf: newRows)
       repetitions += 1
