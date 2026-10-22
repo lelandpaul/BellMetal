@@ -374,7 +374,6 @@ extension Row: Sequence {
   }
   
   public struct RowIterator: IteratorProtocol {
-    public typealias Element = Bell
     let row: Row
     var currentIndex: Int = 1
     
