@@ -30,8 +30,14 @@ one compound change instead of two:
 
 ```swift
 "5.3.1.3.1"   // five separate one-place changes: 5, then 3, then 1, then 3, then 1
-"531"         // NOT the same thing -- one change holding places 5, 3, and 1
+"531"         // NOT the same thing -- read as one change, and rejected: see below
+"1.4"         // two changes: 1, then 4
+"14"          // one change holding places 1 and 4
 ```
+
+The places in a single change must be written in ascending order, and none
+may be above the stage: `"41"` and `"18"` on Minor both throw
+`BellMetalError.invalidPlaceNotation`.
 
 `PlaceNotation`'s own `description` always inserts the dot wherever it's
 needed, so round-tripping a value through `String(describing:)` and back is
