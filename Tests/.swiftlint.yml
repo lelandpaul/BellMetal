@@ -1,5 +1,13 @@
 # Test code may force-unwrap and force-try: a failure there should stop the test, and an
 # unwrap that turns out nil fails it as plainly as an assertion would.
+# Suites are flat lists of cases, so long files and types are expected, and descriptions,
+# fixtures and expected values run long.
 disabled_rules:
   - force_unwrapping
   - force_try
+  - file_length
+  - type_body_length
+
+line_length:
+  warning: 200
+  error: 300
