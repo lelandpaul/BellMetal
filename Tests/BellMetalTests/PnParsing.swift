@@ -164,6 +164,7 @@ struct PnParsingTests {
     ("41", nil),
     ("41", Stage.minor),
     ("x3214", Stage.minor),
+    ("531", nil),
   ] as [(String, Stage?)])
   func parseAllPlacesRejectsUnsortedPlaces(pn: String, stage: Stage?) {
     // Each of these alternates odd/even once the external places are added.

@@ -201,4 +201,15 @@ struct PlaceNotationTests {
       try original.slice(-1..<2)
     }
   }
+
+  @Test("isEmpty is true only for notation with no changes, in either row layout")
+  func isEmpty() throws {
+    let narrow: PlaceNotation = "8:x14x16x18"
+    #expect(!narrow.isEmpty)
+    #expect(try narrow.slice(2..<2).isEmpty)
+    let wide: PlaceNotation = "N:x1N"
+    #expect(wide.stage.usesWideLayout)
+    #expect(!wide.isEmpty)
+    #expect(try wide.slice(0..<0).isEmpty)
+  }
 }
