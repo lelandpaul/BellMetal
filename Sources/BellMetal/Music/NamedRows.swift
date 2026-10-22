@@ -99,9 +99,9 @@ extension NamedRow {
     case .whittingtons:
       guard stage > .doubles, stage < .cinques else { return nil }
       let array = ([1, 2] + Array(3...stage.count)
-        .partitionMap(on: { $0.isMultiple(of: 2) }) { evens, odds in
+        .partitionMap(on: { $0.isMultiple(of: 2) }, applying: { evens, odds in
           odds.reversed() + evens
-        }
+        })
       )
       return Row(array)
     case .rollercoaster:
@@ -160,15 +160,15 @@ extension NamedRow {
   
   private func queens(at stage: Stage) -> Row {
     Row(Array(1...stage.count)
-      .partitionMap(on: { $0.isMultiple(of: 2) }) { evens, odds in
+      .partitionMap(on: { $0.isMultiple(of: 2) }, applying: { evens, odds in
         odds + evens
-      })
+      }))
   }
   
   private func kings(at stage: Stage) -> Row {
     Row(Array(1...stage.count)
-      .partitionMap(on: { $0.isMultiple(of: 2) }) { evens, odds in
+      .partitionMap(on: { $0.isMultiple(of: 2) }, applying: { evens, odds in
         odds.reversed() + evens
-      })
+      }))
   }
 }
