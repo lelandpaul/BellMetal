@@ -30,6 +30,16 @@ struct StageTests {
     #expect(Stage(24) == .twentyFour)
   }
 
+  @Test("init?(count:) accepts exactly 1...maxCount, matching init(_:)")
+  func initCount() {
+    for count in 1...Stage.maxCount {
+      #expect(Stage(count: count) == Stage(count))
+    }
+    for count in [Int.min, -1, 0, Stage.maxCount + 1, Int.max] {
+      #expect(Stage(count: count) == nil)
+    }
+  }
+
   @Test("init?(rawValue:) accepts exactly 0..<maxCount, matching init(_:)")
   func rawValueRange() {
     for count in 1...Stage.maxCount {

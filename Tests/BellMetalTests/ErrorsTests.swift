@@ -54,6 +54,16 @@ struct ErrorsTests {
     }
   }
 
+  @Test("An error's localizedDescription is its description")
+  func localizedDescription() {
+    let errors: [BellMetalError] = [
+      .stageMismatch, .invalidStage, .invalidPlaceNotation, .invalidMask, .invalidBell, .invalidIndex,
+    ]
+    for error in errors {
+      #expect(error.localizedDescription == error.description)
+    }
+  }
+
   // MARK: - Mask
 
   @Test("Mask(string:) throws when a letter is out of range for the inferred stage")

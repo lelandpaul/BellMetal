@@ -60,6 +60,12 @@ struct RowTests {
     #expect(throws: BellMetalError.invalidBell) {
       try Row(validating: "11235") // valid characters, but not a permutation
     }
+    #expect(throws: BellMetalError.invalidBell) {
+      try Row(validating: "1234567890ETABCDFGHJKLMN1") // 25 bells
+    }
+    #expect(throws: BellMetalError.invalidBell) {
+      try Row(validating: "")
+    }
   }
 
   @Test("Bell(character:) resolves a valid bell character, or nil for an unrecognized one")
@@ -202,6 +208,22 @@ struct RowTests {
     #expect(t ** 5 == "4123")
     #expect(t ** -1 == "2341")
     #expect(t ** -2 == "3412")
+  }
+
+  @Test("pow handles huge and extreme powers by reducing modulo the row's order",
+        arguments: [Row("4123"), Row("21436587"), Stage(24).rounds, try! Row(validating: "234567890ETABCD1FGHJKLMN")])
+  func extremePowers(row: Row) {
+    // Repeated multiplication, for checking small powers.
+    func slowPow(_ n: Int) -> Row {
+      (0..<n).reduce(row.stage.rounds) { result, _ in result * row }
+    }
+    for n in 0...30 {
+      #expect(row.pow(n) == slowPow(n))
+      #expect(row.pow(-n) == slowPow(n).invert())
+    }
+    // Int.min can't be negated, and Int.max would take forever one step at a time.
+    #expect(row.pow(Int.max) * row.pow(Int.min) == row.pow(-1))
+    #expect(row.pow(Int.max).pow(-1) == row.pow(Int.max - 1).invert() * row.invert())
   }
   
   @Test("** binds tighter than * when the two operators are mixed")

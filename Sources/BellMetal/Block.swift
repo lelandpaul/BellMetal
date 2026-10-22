@@ -106,7 +106,7 @@ extension Block: Sequence {
   }
 
   /// Iterates over a block's rows in order, building each `Row` as it goes.
-  public struct Iterator: IteratorProtocol {
+  public struct Iterator: IteratorProtocol, Sendable {
     let block: Block
     var index = 0
 
@@ -260,6 +260,7 @@ extension Block {
 extension Block {
   /// Transposes the entire block by a Row by multiplying each
   /// row in the block *on the left*.
+  /// - Throws: `BellMetalError.stageMismatch` if `new` is a different stage.
   public func transpose(by new: Row) throws -> Block {
     guard new.stage == self.stage else {
       throw BellMetalError.stageMismatch
@@ -275,6 +276,8 @@ extension Block {
   }
 
   /// Extend the block to a higher stage by appending tenors-behind.
+  /// - Throws: `BellMetalError.invalidStage` unless `higher` is strictly
+  ///   higher than the block's stage (the same stage throws too).
   public func extend(to higher: Stage) throws -> Block {
     guard self.stage < higher else {
       throw BellMetalError.invalidStage
@@ -293,6 +296,7 @@ extension Block {
 
 extension Block {
   /// Concatenate two blocks.
+  /// - Throws: `BellMetalError.stageMismatch` if `other` is a different stage.
   public func concatenate(_ other: Block) throws -> Block {
     guard self.stage == other.stage else {
       throw BellMetalError.stageMismatch
