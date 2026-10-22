@@ -64,6 +64,22 @@ struct ErrorsTests {
     }
   }
 
+  @Test("Mask(string:) throws, rather than trapping, on a character that isn't x or a bell",
+        arguments: ["xxXx", "1-34", "12 4", "Z234"])
+  func maskInitNonBellCharacter(string: String) {
+    #expect(throws: BellMetalError.invalidMask) {
+      try Mask(string: string)
+    }
+  }
+
+  @Test("Mask(string:) throws when the same bell is fixed in two positions",
+        arguments: ["11xx", "x2x2", "123456781"])
+  func maskInitDuplicateBell(string: String) {
+    #expect(throws: BellMetalError.invalidMask) {
+      try Mask(string: string)
+    }
+  }
+
   @Test("matching(any:) throws when a mask's stage disagrees with the block or another mask")
   func maskMatchingAnyStageMismatch() {
     let block: Block = ["1234", "2143"] // minimus
