@@ -96,7 +96,7 @@ extension Block: ExpressibleByArrayLiteral {
 extension Block: CustomStringConvertible {
   /// A description listing every row in the block, in order.
   public var description: String {
-    return "Block(\(Array(self))"
+    return "Block(\(Array(self)))"
   }
 }
 
