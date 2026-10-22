@@ -180,7 +180,17 @@ struct RowTests {
     #expect(x * x == Stage.sixteen.rounds)
     #expect(x.invert() == x)
   }
-  
+
+  @Test("*= multiplies in place, as * does")
+  func multiplicationInPlace() {
+    var row: Row = "214365"
+    let h: Row = "132546"
+    row *= h
+    #expect(row == "241635")
+    row *= h
+    #expect(row == ("214365" as Row) * h * h)
+  }
+
   @Test("The ** operator raises a row to positive, zero, and negative integer powers")
   func powers() async throws {
     let t: Row = "4123"

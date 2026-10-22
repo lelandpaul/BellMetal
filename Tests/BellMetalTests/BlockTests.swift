@@ -186,4 +186,30 @@ struct BlockTests {
     ]
     #expect(try block.append(rows.first!, rows.last!) == expected)
   }
+
+  @Test("Concatenating with += appends the other block's rows in place, as + does")
+  func concatenateInPlace() {
+    var block: Block = [
+      "1234",
+      "2143",
+    ]
+    let other: Block = [
+      "2413",
+      "4231",
+    ]
+    let expected = block + other
+    block += other
+    #expect(block == expected)
+    #expect(block.count == 4)
+    #expect(block.last == "4231")
+  }
+
+  @Test("isEmpty is false for every block, in either row layout: a block always has a row")
+  func isEmptyIsFalse() {
+    let narrow: Block = ["1234"]
+    #expect(!narrow.isEmpty)
+    let wide = Block(Stage(24).rounds)
+    #expect(Stage(24).usesWideLayout)
+    #expect(!wide.isEmpty)
+  }
 }
