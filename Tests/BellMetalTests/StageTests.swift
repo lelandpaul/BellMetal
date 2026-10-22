@@ -49,6 +49,52 @@ struct StageTests {
     }
   }
 
+  @Test("tenorPair is the two heaviest bells, in ringing order")
+  func tenorPair() {
+    #expect(Stage.two.tenorPair == (.b1, .b2))
+    #expect(Stage.major.tenorPair == (.b7, .b8))
+    #expect(Stage.sixteen.tenorPair == (.bC, .bD))
+    #expect(Stage.seventeen.tenorPair == (.bD, .bF))
+    #expect(Stage.twentyFour.tenorPair == (.bM, .bN))
+  }
+
+  @Test("includes(_:) is true up to the tenor and false above it")
+  func includes() {
+    for count in 1...Stage.maxCount {
+      let stage = Stage(count)
+      #expect(stage.includes(.b1))
+      #expect(stage.includes(stage.tenor))
+      if let above = Bell(number: count + 1) {
+        #expect(!stage.includes(above))
+      }
+    }
+    #expect(!Stage.major.includes(.b9))
+    #expect(Stage.twentyFour.includes(.bN))
+  }
+
+  @Test("even follows the number of bells")
+  func even() {
+    #expect(!Stage.one.even)
+    #expect(Stage.two.even)
+    #expect(!Stage.doubles.even)
+    #expect(Stage.major.even)
+    #expect(!Stage.twentyThree.even)
+    #expect(Stage.twentyFour.even)
+  }
+
+  @Test("Stages and bells order from fewest bells and from the treble")
+  func ordering() {
+    #expect(Stage.one < .twentyFour)
+    #expect(Stage.minor < .triples)
+    #expect(!(Stage.major < .major))
+    #expect([Stage.royal, .one, .twentyFour, .minor].sorted() == [.one, .minor, .royal, .twentyFour])
+    #expect(Bell.b1 < .bN)
+    #expect(Bell.b0 < .bE)
+    #expect(Bell.bT < .bA)
+    let bells = Stage.twentyFour.allBells
+    #expect(bells.reversed().sorted() == bells)
+  }
+
   @Test("Stage stays a single byte")
   func layout() {
     #expect(MemoryLayout<Stage>.size == 1)
