@@ -59,17 +59,32 @@ struct CodableTests {
     }
   }
 
-  @Test("Block round-trips through JSON, and rejects empty or mixed-stage arrays")
+  @Test("Block round-trips through JSON, and rejects stageless empty or mixed-stage arrays")
   func blockRoundTrip() throws {
     let block: Block = ["1234", "2143", "2413"]
     _ = try roundTrip(block)
+    #expect(String(data: try encoder.encode(block), encoding: .utf8) == "[\"1234\",\"2143\",\"2413\"]")
 
     #expect(throws: (any Error).self) {
-      try decoder.decode(Block.self, from: Data("[]".utf8))
+      try decoder.decode(Block.self, from: Data("[]".utf8)) // no stage to take
     }
     #expect(throws: (any Error).self) {
       try decoder.decode(Block.self, from: Data("[\"1234\", \"12345\"]".utf8)) // mixed stages
     }
+    #expect(throws: (any Error).self) {
+      try decoder.decode(Block.self, from: Data("{\"stage\":5,\"rows\":[\"1234\"]}".utf8))
+    }
+  }
+
+  @Test("An empty Block round-trips with its stage", arguments: [Stage.minor, .twentyFour])
+  func emptyBlockRoundTrip(stage: Stage) throws {
+    let empty = try Block([], at: stage)
+    let decoded = try roundTrip(empty)
+    #expect(decoded.isEmpty)
+    #expect(decoded.stage == stage)
+    // The keyed form decodes for a non-empty block too.
+    let keyed = try decoder.decode(Block.self, from: Data("{\"stage\":4,\"rows\":[\"1234\"]}".utf8))
+    #expect(keyed == ["1234"])
   }
 
   @Test("Mask encodes and decodes as its string, and rejects letters outside its stage")

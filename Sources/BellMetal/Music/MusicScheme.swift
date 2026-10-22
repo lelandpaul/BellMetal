@@ -35,17 +35,20 @@ extension MusicScheme {
   /// - Returns: A score.
   public func score(_ block: Block, backstrokeStart: Bool = false) -> Int {
     scheme.reduce(into: 0) { result, pair in
-      result += pair.type.score(block) * pair.weight
+      result += pair.type.score(block, backstrokeStart: backstrokeStart) * pair.weight
     }
   }
   
   /// Compute the overall music score for a sequence of `Row`s.
-  /// - Parameter rows: The `Row`s to score
+  /// - Parameter rows: The `Row`s to score. No rows score 0.
   /// - Parameter backstrokeStart: Whether to score the `Row`s as
   /// though the first row is a backstroke.
   /// - Returns: A score.
+  /// - Precondition: Every row has the same stage. Use `Block(_:at:)`,
+  ///   which throws, and `score(_:Block)` for rows that might not.
   public func score(_ rows: [Row], backstrokeStart: Bool = false) -> Int {
-    score(Block(rows), backstrokeStart: backstrokeStart)
+    guard let stage = rows.first?.stage else { return 0 }
+    return score(Self.block(rows, at: stage), backstrokeStart: backstrokeStart)
   }
   
   /// One music type's contribution to an overall score: its raw occurrence
@@ -64,12 +67,23 @@ extension MusicScheme {
   }
   
   /// Get a breakdown by `MusicType` of the score for a given sequence of Rows.
-  /// - Parameter rows: The `Row`s to score.
+  /// - Parameter rows: The `Row`s to score. No rows score 0 for every type.
   /// - Parameter backstrokeStart: Whether to score the `Row`s as
   /// though the first row is a backstroke.
   /// - Returns: A summary of the score by `MusicType.`
+  /// - Precondition: Every row has the same stage, as for `score(_:[Row])`.
   public func scoreDetails(_ rows: [Row], backstrokeStart: Bool = false) -> [ScoreDetail] {
-    scoreDetails(Block(rows), backstrokeStart: backstrokeStart)
+    guard let stage = rows.first?.stage else {
+      return scheme.map { (type: $0.type, weight: $0.weight, score: 0) }
+    }
+    return scoreDetails(Self.block(rows, at: stage), backstrokeStart: backstrokeStart)
+  }
+
+  private static func block(_ rows: [Row], at stage: Stage) -> Block {
+    guard let block = try? Block(rows, at: stage) else {
+      preconditionFailure("Rows to score must all have the same stage: \(rows)")
+    }
+    return block
   }
 }
 
@@ -84,9 +98,11 @@ extension Block {
   }
   /// Get a breakdown of the music score by `MusicType` on some scheme, defaulting to `.shared`.
   /// - Parameter scheme: The scheme to score on.
+  /// - Parameter backstrokeStart: Whether to score the `Row`s as
+  /// though the first row is a backstroke.
   /// - Returns: The score breakdown.
-  public func musicScoreDetails(_ scheme: MusicScheme = .shared) -> [MusicScheme.ScoreDetail] {
-    scheme.scoreDetails(self)
+  public func musicScoreDetails(_ scheme: MusicScheme = .shared, backstrokeStart: Bool = false) -> [MusicScheme.ScoreDetail] {
+    scheme.scoreDetails(self, backstrokeStart: backstrokeStart)
   }
 }
 
