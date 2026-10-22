@@ -252,4 +252,18 @@ struct PnParsingTests {
     #expect(try PNP.getExplicitStage("N:x1N").0 == .twentyFour)
     #expect(try PNP.getExplicitStage("no-prefix-here").0 == nil)
   }
+
+  @Test("On an odd stage a cross makes the last place, and counts as one more bell when inferring")
+  func crossOnOddStage() throws {
+    #expect(try PlaceNotation(string: "x", at: .doubles) == PlaceNotation(string: "5", at: .doubles))
+    #expect(try PlaceNotation(string: "x3").stage == .minimus)
+    #expect(try PlaceNotation(string: "x1x1,5").stage == .minor)
+  }
+
+  @Test("Only a lowercase x is a cross, and place letters are uppercase", arguments: ["X18X18", "x1t"])
+  func caseSensitive(string: String) {
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PlaceNotation(string: string)
+    }
+  }
 }
