@@ -34,22 +34,26 @@ public enum PlaceNotationParser {
     return tokens
   }
 
-  /// Split palindromic sections
+  /// Split palindromic sections, keeping empty ones so they can be rejected.
   private static func splitPalindrome(_ pn: String) -> [String] {
-    pn.split(separator: ",").map(String.init)
+    pn.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
   }
 
   /// Splits a place notation string into individual changes, expanding any
-  /// comma-separated palindromic sections along the way (see
-  /// ``PlaceNotation`` for the palindrome syntax). Throws
+  /// comma-separated palindromic sections along the way. Each section
+  /// before or after a comma is a palindrome written up to its midpoint:
+  /// `"x16x16x16,12"` is `x16x16x16x16x16x` followed by `12`. Throws
   /// `.invalidPlaceNotation` if any section contains an unrecognized
-  /// character (see `splitToChanges`).
+  /// character (see `splitToChanges`), or if a comma leaves a section with
+  /// no changes (`",12"`, `"x16x16,"`).
   public static func splitAndExpandPalindrome(_ pn: String) throws -> [String] {
     guard pn.contains(",") else {
       return try splitToChanges(pn)
     }
     return try splitPalindrome(pn).flatMap { segment in
-      try splitToChanges(segment).makePalindrome()
+      let changes = try splitToChanges(segment)
+      guard !changes.isEmpty else { throw BellMetalError.invalidPlaceNotation }
+      return changes.makePalindrome()
     }
   }
 }
@@ -193,10 +197,12 @@ extension PlaceNotationParser {
   }
   
   /// Fully parses a place notation string (expanding palindromes and implicit
-  /// places) into its stage and the explicit places held by each change, in
-  /// order. Pass `stage` if it's known; otherwise it's inferred (see
-  /// `inferStage`) and may throw if it can't be. Throws `.invalidPlaceNotation`
-  /// if any resulting change isn't structurally valid (see
+  /// places) into its stage and every place made in each change, in order --
+  /// the places written plus the implicit external ones (see
+  /// `inferExternalPlaces`). Pass `stage` if it's known; otherwise it's
+  /// inferred (see `inferStage`) and may throw if it can't be. Throws
+  /// `.invalidPlaceNotation` if the string has no changes at all (`""`,
+  /// `"."`), or if any resulting change isn't structurally valid (see
   /// `validateAlternatingParity` and `validatePlaces`) -- e.g. `"128"` on
   /// Major, which has two even places (2 and 8) back to back, or `"18"` on
   /// Minor, which makes a place the stage doesn't have.
@@ -206,6 +212,7 @@ extension PlaceNotationParser {
   ) throws -> (Stage, [[Int]]) {
     let changes = try splitAndExpandPalindrome(pn)
       .map(parsePlaces)
+    guard !changes.isEmpty else { throw BellMetalError.invalidPlaceNotation }
     let knownStage = try stage ?? inferStage(changes)
     let adjustedChanges = changes.map { inferExternalPlaces($0, at: knownStage) }
     for change in adjustedChanges {
@@ -233,10 +240,12 @@ extension PlaceNotationParser {
   /// e.g. "6:12" (Minor) or "T:x1T" (Maximus, using the same single-character
   /// convention as `Bell`: "1"..."9", then "0", "E", "T", "A"..."D",
   /// "F"..."H", "J"..."N" for stages 10 through 24). Returns `(nil, pn)`
-  /// unchanged if there's no "stage:" prefix.
+  /// unchanged if there's no "stage:" prefix. Throws `.invalidPlaceNotation`
+  /// if there's more than one colon (`"6::x16"`, `"6:x16:"`) or the prefix
+  /// isn't a single stage character.
   public static func getExplicitStage(_ pn: String) throws -> (Stage?, String) {
     guard pn.contains(":") else { return (nil, pn) }
-    let splits = pn.split(separator: ":")
+    let splits = pn.split(separator: ":", omittingEmptySubsequences: false)
     guard splits.count == 2,
           let stageStr = splits.first,
           let pnStr = splits.last,

@@ -103,6 +103,13 @@ struct CodableTests {
     let cross = try PlaceNotation(string: "x", at: .minimus)
     _ = try roundTrip(cross)
 
+    // Empty notation (from slice) encodes as "" and decodes back, though
+    // PlaceNotation(string: "") throws.
+    for stage: Stage in [.minor, .eighteen] {
+      let empty = try PlaceNotation(string: "x", at: stage).slice(0..<0)
+      #expect(try roundTrip(empty).isEmpty)
+    }
+
     let data = try encoder.encode(pn)
     let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
     #expect(json?["stage"] as? Int == 4)

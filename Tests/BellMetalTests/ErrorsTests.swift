@@ -213,5 +213,30 @@ struct ErrorsTests {
     #expect(throws: BellMetalError.invalidPlaceNotation) {
       try PNP.getExplicitStage("1:2:34") // only one colon is allowed
     }
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.getExplicitStage("6::x16") // an empty piece still counts as one
+    }
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.getExplicitStage("6:x16:")
+    }
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.getExplicitStage(":x16")
+    }
+  }
+
+  @Test("PlaceNotation init throws on notation with no changes, rather than pricking nothing",
+        arguments: ["", ".", "..", ",", "6:", "6:."])
+  func noChanges(string: String) {
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PlaceNotation(string: string, at: .minor)
+    }
+  }
+
+  @Test("PlaceNotation init throws when a comma leaves a section with no changes",
+        arguments: [",12", ",,12", "x16x16,", "x16x16,,12", "x16x16,.,12"])
+  func emptyPalindromeSection(string: String) {
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PlaceNotation(string: string, at: .minor)
+    }
   }
 }
