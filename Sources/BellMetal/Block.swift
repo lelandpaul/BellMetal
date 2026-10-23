@@ -3,6 +3,10 @@ import Foundation
 /// An ordered sequence of rows. Differs from [Row] in
 /// enforcing a consistent stage and in keeping a Set
 /// for quick truth-checking.
+///
+/// A block can be empty, e.g. one half of `groupByStroke()` on a one-row
+/// block, or a one-change notation pricked with `.keepNeither`. Check
+/// `isEmpty` before using `first` or `last`.
 public struct Block: Sendable {
   /// The stage (number of bells) every row in this block belongs to.
   public let stage: Stage
@@ -27,7 +31,20 @@ public struct Block: Sendable {
   init(_ rows: [Row]) {
     precondition(!rows.isEmpty, "Cannot create empty Block.")
     precondition(Set(rows.map(\.stage)).count == 1, "Inconsistent Stages: \(rows)")
-    let stage = rows[0].stage
+    self.init(unchecked: rows, at: rows[0].stage)
+  }
+
+  /// Creates a block from rows that all have the given stage. Unlike an
+  /// array literal, this takes a runtime array, and allows an empty one.
+  /// - Throws: `BellMetalError.stageMismatch` if any row isn't at `stage`.
+  public init(_ rows: [Row], at stage: Stage) throws {
+    guard rows.allSatisfy({ $0.stage == stage }) else {
+      throw BellMetalError.stageMismatch
+    }
+    self.init(unchecked: rows, at: stage)
+  }
+
+  private init(unchecked rows: [Row], at stage: Stage) {
     if stage.usesWideLayout {
       self.init(stage: stage, raw: RawBlock(rows: rows.map(\.wide)))
     } else {
@@ -121,8 +138,11 @@ extension Block: Sequence {
 }
 
 extension Block: Equatable {
+  /// Blocks are equal if they have the same stage and the same rows in the
+  /// same order. (The stage matters for empty blocks.)
   public static func == (lhs: Block, rhs: Block) -> Bool {
-    switch (lhs.storage, rhs.storage) {
+    guard lhs.stage == rhs.stage else { return false }
+    return switch (lhs.storage, rhs.storage) {
     case let (.narrow(lhs), .narrow(rhs)): lhs.rows == rhs.rows
     case let (.wide(lhs), .wide(rhs)): lhs.rows == rhs.rows
     default: false
@@ -143,23 +163,51 @@ extension Block: Hashable {
 // MARK: - Codable
 
 extension Block: Codable {
+  private enum CodingKeys: String, CodingKey {
+    case stage
+    case rows
+  }
+
   /// Encodes/decodes as a plain array of Rows, not the internal
-  /// bit-packed storage (or the redundant rowSet cache).
+  /// bit-packed storage (or the redundant rowSet cache). An empty array
+  /// has no stage to take, so an empty block encodes as
+  /// `{"stage": <bell count>, "rows": []}` instead. Decoding accepts that
+  /// form for any block.
   public init(from decoder: Decoder) throws {
+    if let keyed = try? decoder.container(keyedBy: CodingKeys.self) {
+      let stage = try keyed.decode(Stage.self, forKey: .stage)
+      let rows = try keyed.decode([Row].self, forKey: .rows)
+      do {
+        try self.init(rows, at: stage)
+      } catch {
+        throw DecodingError.dataCorruptedError(
+          forKey: .rows, in: keyed, debugDescription: "Block rows aren't all at stage \(stage)"
+        )
+      }
+      return
+    }
     let container = try decoder.singleValueContainer()
     let rows = try container.decode([Row].self)
-    guard !rows.isEmpty else {
-      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Block cannot be empty")
+    guard let stage = rows.first?.stage else {
+      throw DecodingError.dataCorruptedError(
+        in: container, debugDescription: "An empty Block must be encoded with its stage"
+      )
     }
-    guard Set(rows.map(\.stage)).count == 1 else {
+    guard let block = try? Block(rows, at: stage) else {
       throw DecodingError.dataCorruptedError(in: container, debugDescription: "Block rows have inconsistent stages")
     }
-    self.init(rows)
+    self = block
   }
 
   public func encode(to encoder: Encoder) throws {
-    var container = encoder.singleValueContainer()
-    try container.encode(Array(self))
+    if isEmpty {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(stage, forKey: .stage)
+      try container.encode([Row](), forKey: .rows)
+    } else {
+      var container = encoder.singleValueContainer()
+      try container.encode(Array(self))
+    }
   }
 }
 
@@ -197,20 +245,25 @@ extension Block {
     case .wide(let raw): raw.rowSet.count
     }
   }
-  /// The first row in the block. A block can never be empty.
+  /// The first row in the block.
+  /// - Precondition: The block isn't empty (see `isEmpty`).
   public var first: Row {
-    self[0] // Safe: Not possible to construct empty Block
+    precondition(!isEmpty, "first on an empty Block")
+    return self[0]
   }
-  /// The last row in the block. A block can never be empty.
+  /// The last row in the block.
+  /// - Precondition: The block isn't empty (see `isEmpty`).
   public var last: Row {
-    self[count - 1] // Safe: Not possible to construct empty Block
+    precondition(!isEmpty, "last on an empty Block")
+    return self[count - 1]
   }
 
   /// Separates the rows into two blocks by stroke parity.
   /// - Parameter backstrokeStart: Whether to consider the current
   /// block to start at a backstroke or not. (Default false, i.e. handstroke
   /// start.)
-  /// - Returns: Two blocks labeled hand and back.
+  /// - Returns: Two blocks labeled hand and back. Either can be empty: a
+  /// one-row block has no rows at the other stroke.
   public func groupByStroke(
     backstrokeStart: Bool = false
   ) -> (hand: Block, back: Block) {
@@ -320,8 +373,10 @@ extension Block {
     lhs = lhs + rhs
   }
 
-  /// Append one or more rows to this block.
+  /// Returns this block with the given rows added to the end. (It doesn't
+  /// change this block.) With no rows, returns the block unchanged.
+  /// - Throws: `BellMetalError.stageMismatch` if any row is a different stage.
   public func append(_ other: Row...) throws -> Block {
-    return try self.concatenate(Block(other))
+    try self.concatenate(Block(other, at: stage))
   }
 }

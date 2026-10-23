@@ -52,6 +52,10 @@ struct ErrorsTests {
     #expect(throws: BellMetalError.stageMismatch) {
       try block.append(wrongStageRow)
     }
+    // Mixed stages among several rows throw too, rather than trapping.
+    #expect(throws: BellMetalError.stageMismatch) {
+      try block.append("1234", "12345")
+    }
   }
 
   @Test("An error's localizedDescription is its description")
