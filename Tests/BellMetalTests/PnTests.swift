@@ -169,6 +169,12 @@ struct PlaceNotationTests {
     #expect(throws: BellMetalError.invalidIndex) {
       try original.replacing(at: -1, with: "14")
     }
+    #expect(throws: BellMetalError.invalidIndex) {
+      try original.replacing(at: Int.max, with: "14") // no overflow on index + 1
+    }
+    #expect(throws: BellMetalError.invalidIndex) {
+      try original.replacing(at: Int.max, with: PlaceNotation(string: "14", at: .major))
+    }
   }
 
   @Test("slice(_:) extracts the changes in the given range as their own PlaceNotation")
@@ -200,5 +206,51 @@ struct PlaceNotationTests {
     #expect(throws: BellMetalError.invalidIndex) {
       try original.slice(-1..<2)
     }
+  }
+
+  @Test("isEmpty is true only for notation with no changes, in either row layout")
+  func isEmpty() throws {
+    let narrow: PlaceNotation = "8:x14x16x18"
+    #expect(!narrow.isEmpty)
+    #expect(try narrow.slice(2..<2).isEmpty)
+    let wide: PlaceNotation = "N:x1N"
+    #expect(wide.stage.usesWideLayout)
+    #expect(!wide.isEmpty)
+    #expect(try wide.slice(0..<0).isEmpty)
+  }
+
+  @Test("Pricking empty notation gives just the starting row, in every mode, and never loops",
+        arguments: [Stage.minor, .eighteen])
+  func prickEmpty(stage: Stage) throws {
+    let empty = try PlaceNotation(string: "x", at: stage).slice(0..<0)
+    let start = try stage.rounds.multiply(by: PlaceNotation(string: "x", at: stage).leadhead)
+    for mode: PlaceNotation.LeadheadMode in [.keepFinal, .keepInitial, .keepBoth] {
+      #expect(try Array(empty.prick(at: start, keeping: mode)) == [start])
+    }
+    #expect(try empty.prick(at: start, keeping: .keepNeither).isEmpty)
+    #expect(try empty.prick(repeat: .untilFalse).count == 1)
+    #expect(try empty.prick(repeat: .untilRound).count == 1)
+    #expect(try empty.prick(repeat: .untilPosition(bell: "1", position: 2)).count == 1)
+  }
+
+  @Test("Pricking one change with .keepNeither gives an empty block")
+  func prickOneChangeKeepNeither() throws {
+    let block = try PlaceNotation(string: "x", at: .minimus).prick(keeping: .keepNeither)
+    #expect(block.isEmpty)
+    #expect(block.stage == .minimus)
+  }
+
+  @Test(".untilPosition stops when the lead head comes back round, if the bell can't reach the position")
+  func untilPositionUnreachable() throws {
+    // Under "x" on Minimus the treble only swaps between 1st and 2nd place.
+    let block = try PlaceNotation(string: "x", at: .minimus)
+      .prick(repeat: .untilPosition(bell: "1", position: 3))
+    #expect(Array(block) == ["2143", "1234"])
+  }
+
+  @Test(".times(0) still pricks one repetition, like .times(1)")
+  func timesZero() throws {
+    let pn: PlaceNotation = "x16x16x16,12"
+    #expect(try pn.prick(repeat: .times(0)) == pn.prick(repeat: .times(1)))
   }
 }

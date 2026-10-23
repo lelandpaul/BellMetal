@@ -6,7 +6,8 @@ import Foundation
 public enum NamedRow: Equatable, Hashable, CaseIterable, Sendable {
   /// Rounds reversed, e.g. "87654321" on Major.
   case backrounds
-  /// A "spread" variant of `tittums`, with the front half reversed.
+  /// A "spread" variant of `tittums`, with the front half reversed. Defined
+  /// from two bells up.
   case explodedtittums
   /// A well-known named row, defined from Doubles to Sixteen.
   case hagdyke
@@ -18,15 +19,19 @@ public enum NamedRow: Equatable, Hashable, CaseIterable, Sendable {
   case jokers
   /// The odd bells descending, followed by the even bells ascending, e.g. "531246" on Minor.
   case kings
-  /// `kings` with the first two bells swapped.
+  /// `kings` with bells 1 and 2 interchanged, e.g. "75321468" on Major.
+  /// Defined from three bells up.
   case princes
-  /// `queens` with the middle two bells swapped.
+  /// `queens` with the bells in the two middle positions swapped, e.g.
+  /// "13527468" on Major. Defined from Doubles up; on an odd stage it swaps
+  /// the middle position with the one after it, e.g. "1352746" on Triples.
   case princesses
   /// The odd bells ascending, followed by the even bells ascending, e.g. "135246" on Minor.
   case queens
   /// The bells in their home positions, e.g. "12345678" on Major.
   case rounds
   /// The front and back halves of rounds interleaved, e.g. "15263748" on Major.
+  /// Defined from two bells up.
   case tittums
   /// A well-known named row, defined only for Minor through Royal.
   case whittingtons
@@ -67,10 +72,7 @@ extension NamedRow {
     case .backrounds:
       return Row((1...stage.count).reversed())
     case .explodedtittums:
-      let half = (stage.count + 1) / 2
-      let upwards = Array((1...half).reversed())
-      let downwards = Array(half+1...stage.count)
-      return Row(upwards.interleave(with: downwards))
+      return tittums(at: stage, exploded: true)
     case .hagdyke:
       return hagdyke(at: stage)
     case .intermediate:
@@ -83,25 +85,22 @@ extension NamedRow {
     case .kings:
       return kings(at: stage)
     case .princes:
+      guard stage >= .singles else { return nil }
       return Row([2, 1] + (3...stage.count)) * kings(at: stage)
     case .princesses:
-      let half = (stage.count + 1) / 2
-      return queens(at: stage) * Row((1..<half) + [half+1, half] + (half+2...stage.count))
+      return princesses(at: stage)
     case .queens:
       return queens(at: stage)
     case .rounds:
       return stage.rounds
     case .tittums:
-      let half = (stage.count + 1) / 2
-      let upper = Array(1...half)
-      let lower = Array(half+1...stage.count)
-      return Row(upper.interleave(with: lower))
+      return tittums(at: stage, exploded: false)
     case .whittingtons:
       guard stage > .doubles, stage < .cinques else { return nil }
       let array = ([1, 2] + Array(3...stage.count)
-        .partitionMap(on: { $0.isMultiple(of: 2) }) { evens, odds in
+        .partitionMap(on: { $0.isMultiple(of: 2) }, applying: { evens, odds in
           odds.reversed() + evens
-        }
+        })
       )
       return Row(array)
     case .rollercoaster:
@@ -158,17 +157,35 @@ extension NamedRow {
     return try! PlaceNotation(string: places, at: stage) // Safe: a valid change on every stage
   }
   
+  /// The front and back halves interleaved, the front half reversed if
+  /// `exploded`. Needs two bells, so that there are two halves.
+  private func tittums(at stage: Stage, exploded: Bool) -> Row? {
+    guard stage >= .two else { return nil }
+    let half = (stage.count + 1) / 2
+    let front = Array(1...half)
+    let back = Array(half+1...stage.count)
+    return Row((exploded ? front.reversed() : front).interleave(with: back))
+  }
+
+  /// Queens with the middle two positions swapped. Below Doubles that gives
+  /// rounds back (or has no middle pair), so it isn't defined there.
+  private func princesses(at stage: Stage) -> Row? {
+    guard stage >= .doubles else { return nil }
+    let half = (stage.count + 1) / 2
+    return queens(at: stage) * Row((1..<half) + [half+1, half] + (half+2...stage.count))
+  }
+
   private func queens(at stage: Stage) -> Row {
     Row(Array(1...stage.count)
-      .partitionMap(on: { $0.isMultiple(of: 2) }) { evens, odds in
+      .partitionMap(on: { $0.isMultiple(of: 2) }, applying: { evens, odds in
         odds + evens
-      })
+      }))
   }
   
   private func kings(at stage: Stage) -> Row {
     Row(Array(1...stage.count)
-      .partitionMap(on: { $0.isMultiple(of: 2) }) { evens, odds in
+      .partitionMap(on: { $0.isMultiple(of: 2) }, applying: { evens, odds in
         odds.reversed() + evens
-      })
+      }))
   }
 }

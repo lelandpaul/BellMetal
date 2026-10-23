@@ -35,3 +35,12 @@ cyclomatic_complexity:
 
 empty_count:
   severity: warning
+
+# Comment-only lines don't count towards a file's length, as in the other repos.
+file_length:
+  ignore_comment_only_lines: true
+
+# Labelled tuples are used for small results (`MusicScheme.ScoreDetail`), as in the other repos.
+large_tuple:
+  warning: 4
+  error: 5

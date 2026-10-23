@@ -69,6 +69,14 @@ extension Stage {
     self.init(uncheckedRawValue: UInt8(count - 1))
   }
 
+  /// Creates the stage with the given number of bells, or nil unless
+  /// `count` is 1...`Stage.maxCount`. Use this for counts from untrusted
+  /// input; `init(_:)` traps instead.
+  public init?(count: Int) {
+    guard (1...Stage.maxCount).contains(count) else { return nil }
+    self.init(count)
+  }
+
   /// The number of bells on this stage, e.g. 8 for `.major`.
   public var count: Int {
     Int(rawValue) + 1

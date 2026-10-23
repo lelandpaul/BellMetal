@@ -186,4 +186,72 @@ struct BlockTests {
     ]
     #expect(try block.append(rows.first!, rows.last!) == expected)
   }
+
+  @Test("Concatenating with += appends the other block's rows in place, as + does")
+  func concatenateInPlace() {
+    var block: Block = [
+      "1234",
+      "2143",
+    ]
+    let other: Block = [
+      "2413",
+      "4231",
+    ]
+    let expected = block + other
+    block += other
+    #expect(block == expected)
+    #expect(block.count == 4)
+    #expect(block.last == "4231")
+  }
+
+  @Test("isEmpty is false for a block with rows, and true for one without, in either row layout")
+  func isEmpty() throws {
+    let narrow: Block = ["1234"]
+    #expect(!narrow.isEmpty)
+    #expect(try Block([], at: .minimus).isEmpty)
+    let wide = Block(Stage(24).rounds)
+    #expect(Stage(24).usesWideLayout)
+    #expect(!wide.isEmpty)
+    #expect(try Block([], at: Stage(24)).isEmpty)
+  }
+
+  @Test("Block(_:at:) builds a block from a runtime array, and throws on a row of another stage")
+  func initRowsAtStage() throws {
+    let rows: [Row] = ["1234", "2143"]
+    #expect(try Block(rows, at: .minimus) == ["1234", "2143"])
+    #expect(throws: BellMetalError.stageMismatch) {
+      try Block(rows, at: .doubles)
+    }
+    #expect(throws: BellMetalError.stageMismatch) {
+      try Block(["1234", "12345"], at: .minimus)
+    }
+  }
+
+  @Test("groupByStroke on a one-row block gives an empty half at the other stroke",
+        arguments: [Stage.minimus, .twentyFour])
+  func groupByStrokeOneRow(stage: Stage) {
+    let block = Block(stage.rounds)
+    let hand = block.groupByStroke()
+    #expect(Array(hand.hand) == [stage.rounds])
+    #expect(hand.back.isEmpty)
+    #expect(hand.back.stage == stage)
+    let back = block.groupByStroke(backstrokeStart: true)
+    #expect(back.hand.isEmpty)
+    #expect(Array(back.back) == [stage.rounds])
+  }
+
+  @Test("Empty blocks of different stages aren't equal, so equality agrees with hashing")
+  func emptyBlocksEqualityAndHash() throws {
+    let minimus = try Block([], at: .minimus)
+    let minor = try Block([], at: .minor)
+    #expect(minimus != minor)
+    #expect(minimus == (try Block([], at: .minimus)))
+    #expect(minimus.hashValue == (try Block([], at: .minimus)).hashValue)
+  }
+
+  @Test("append() with no rows returns the block unchanged")
+  func appendNothing() throws {
+    let block: Block = ["1234", "2143"]
+    #expect(try block.append() == block)
+  }
 }

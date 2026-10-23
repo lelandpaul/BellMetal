@@ -130,6 +130,28 @@ struct NamedRowsTests {
     }
   }
 
+  @Test("Every named row is nil or a row of the right stage, at every stage",
+        arguments: (1...Stage.maxCount).map { Stage($0) })
+  func everyStage(stage: Stage) {
+    for named in NamedRow.allCases {
+      if let row = named.row(at: stage) {
+        #expect(row.stage == stage, "\(named) at \(stage)")
+      }
+    }
+  }
+
+  @Test("Rows that need more bells are nil below their minimum stage")
+  func minimumStages() {
+    #expect(NamedRow.tittums.row(at: .one) == nil)
+    #expect(NamedRow.explodedtittums.row(at: .one) == nil)
+    #expect(NamedRow.tittums.row(at: .two) == "12")
+    #expect(NamedRow.princes.row(at: .two) == nil)
+    #expect(NamedRow.princes.row(at: .singles) != nil)
+    #expect(NamedRow.princesses.row(at: .minimus) == nil)
+    #expect(NamedRow.princesses.row(at: .doubles) != nil)
+    #expect(NamedRow.princesses.row(at: .triples) == "1352746")
+  }
+
   @Test("NamedRow has exactly 16 cases")
   func allCasesCount() {
     #expect(NamedRow.allCases.count == 16)

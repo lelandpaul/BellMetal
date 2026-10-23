@@ -145,6 +145,9 @@ extension Row {
   /// above). Use this instead of the crashing string-literal initializer when
   /// the string comes from untrusted input.
   public init(validating string: String) throws {
+    guard (1...Stage.maxCount).contains(string.count) else {
+      throw BellMetalError.invalidBell
+    }
     let bells = try string.map { character -> Bell in
       guard let bell = Bell(character: character) else {
         throw BellMetalError.invalidBell
@@ -256,30 +259,32 @@ extension Row {
     return Row(stage: stage, narrow: .build(rawStage: stage.rawValue) { narrow.rawPosition(of: $0)! })
   }
   
-  /// Multiply repeatedly.
-  private func raiseToPositivePower(_ power: Int) -> Row {
-    precondition(power > 0, "Tried to raise to a non-positive power with internal function.")
-    var newRow = self
-    for _ in 1..<power {
-      newRow *= self
+  /// The smallest positive power of this row that gives rounds: the least
+  /// common multiple of its cycle lengths.
+  private var order: Int {
+    placeBellOrders.reduce(1) { order, cycle in
+      var (a, b) = (order, cycle.count)
+      while b != 0 { (a, b) = (b, a % b) }
+      return order / a * cycle.count
     }
-    return newRow
   }
-  
-  /// Raise the row to the specified power.
+
+  /// Raise the row to the specified power. Negative powers raise the
+  /// inverse. Any power works, including `Int.min`: it's reduced modulo the
+  /// row's order first, then raised by repeated squaring.
   public func pow(_ power: Int) -> Row {
-    switch power {
-    case 0:
-      stage.rounds
-    case 1:
-      self
-    case -1:
-      invert()
-    case let x where x < 0:
-      raiseToPositivePower(-power).invert()
-    default:
-      raiseToPositivePower(power)
+    let order = self.order
+    // Swift's % keeps the dividend's sign, so shift a negative remainder up.
+    var exponent = power % order
+    if exponent < 0 { exponent += order }
+    var result = stage.rounds
+    var square = self
+    while exponent > 0 {
+      if exponent & 1 == 1 { result *= square }
+      square *= square
+      exponent >>= 1
     }
+    return result
   }
 }
 
@@ -291,7 +296,8 @@ precedencegroup ExponentialPrecedence {
 infix operator **: ExponentialPrecedence
 
 extension Row {
-  static func ** (lhs: Self, rhs: Int) -> Self {
+  /// `lhs.pow(rhs)`: the row raised to a power.
+  public static func ** (lhs: Self, rhs: Int) -> Self {
     lhs.pow(rhs)
   }
 }
@@ -302,6 +308,8 @@ extension Row {
 extension Row {
   /// Extends the row up to a higher stage by adding tenors-behind.
   /// e.g. 4321.extend(to .major) == 43215678
+  /// - Throws: `BellMetalError.invalidStage` unless `newStage` is strictly
+  ///   higher than the row's stage (the same stage throws too).
   public func extend(to newStage: Stage) throws -> Row {
     guard self.stage < newStage else {
       throw BellMetalError.invalidStage
@@ -373,8 +381,7 @@ extension Row: Sequence {
     RowIterator(row: self)
   }
   
-  public struct RowIterator: IteratorProtocol {
-    public typealias Element = Bell
+  public struct RowIterator: IteratorProtocol, Sendable {
     let row: Row
     var currentIndex: Int = 1
     

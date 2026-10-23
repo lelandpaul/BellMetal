@@ -52,6 +52,20 @@ struct ErrorsTests {
     #expect(throws: BellMetalError.stageMismatch) {
       try block.append(wrongStageRow)
     }
+    // Mixed stages among several rows throw too, rather than trapping.
+    #expect(throws: BellMetalError.stageMismatch) {
+      try block.append("1234", "12345")
+    }
+  }
+
+  @Test("An error's localizedDescription is its description")
+  func localizedDescription() {
+    let errors: [BellMetalError] = [
+      .stageMismatch, .invalidStage, .invalidPlaceNotation, .invalidMask, .invalidBell, .invalidIndex,
+    ]
+    for error in errors {
+      #expect(error.localizedDescription == error.description)
+    }
   }
 
   // MARK: - Mask
@@ -61,6 +75,22 @@ struct ErrorsTests {
     // 'D' (bell 16) isn't valid on a 3-bell stage (inferred from the string's length).
     #expect(throws: BellMetalError.invalidMask) {
       try Mask(string: "x1D")
+    }
+  }
+
+  @Test("Mask(string:) throws, rather than trapping, on a character that isn't x or a bell",
+        arguments: ["xxXx", "1-34", "12 4", "Z234"])
+  func maskInitNonBellCharacter(string: String) {
+    #expect(throws: BellMetalError.invalidMask) {
+      try Mask(string: string)
+    }
+  }
+
+  @Test("Mask(string:) throws when the same bell is fixed in two positions",
+        arguments: ["11xx", "x2x2", "123456781"])
+  func maskInitDuplicateBell(string: String) {
+    #expect(throws: BellMetalError.invalidMask) {
+      try Mask(string: string)
     }
   }
 
@@ -186,6 +216,31 @@ struct ErrorsTests {
     }
     #expect(throws: BellMetalError.invalidPlaceNotation) {
       try PNP.getExplicitStage("1:2:34") // only one colon is allowed
+    }
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.getExplicitStage("6::x16") // an empty piece still counts as one
+    }
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.getExplicitStage("6:x16:")
+    }
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PNP.getExplicitStage(":x16")
+    }
+  }
+
+  @Test("PlaceNotation init throws on notation with no changes, rather than pricking nothing",
+        arguments: ["", ".", "..", ",", "6:", "6:."])
+  func noChanges(string: String) {
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PlaceNotation(string: string, at: .minor)
+    }
+  }
+
+  @Test("PlaceNotation init throws when a comma leaves a section with no changes",
+        arguments: [",12", ",,12", "x16x16,", "x16x16,,12", "x16x16,.,12"])
+  func emptyPalindromeSection(string: String) {
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PlaceNotation(string: string, at: .minor)
     }
   }
 }

@@ -47,4 +47,37 @@ struct MusicSchemeTests {
     _ = rounds.musicScore()
     _ = rounds.musicScoreDetails()
   }
+
+  @Test("Regression: MusicScheme.shared scores a block at every stage without trapping",
+        arguments: (1...Stage.maxCount).map { Stage($0) })
+  func sharedSchemeEveryStage(stage: Stage) {
+    let block = Block(stage.rounds)
+    let total = MusicScheme.shared.score(block)
+    #expect(total == MusicScheme.shared.scoreDetails(block).reduce(0) { $0 + $1.score })
+  }
+
+  @Test("backstrokeStart reaches every music type, so score agrees with the sum of scoreDetails")
+  func backstrokeStartPassedThrough() {
+    // Tenors reversed in the second row: a backstroke from a handstroke start,
+    // a handstroke from a backstroke start.
+    let block: Block = ["12345678", "12345687"]
+    let scheme = MusicScheme([(.tenorsReversed, weight: 1)])
+    #expect(scheme.score(block) == 1)
+    #expect(scheme.score(block, backstrokeStart: true) == 0)
+    #expect(block.musicScore(scheme, backstrokeStart: true) == 0)
+    #expect(block.musicScoreDetails(scheme, backstrokeStart: true).map(\.score) == [0])
+    for start in [false, true] {
+      let total = MusicScheme.shared.score(block, backstrokeStart: start)
+      let details = MusicScheme.shared.scoreDetails(block, backstrokeStart: start)
+      #expect(total == details.reduce(0) { $0 + $1.score })
+    }
+  }
+
+  @Test("Scoring no rows gives 0, and a 0 for every type in the details")
+  func scoreNoRows() {
+    #expect(MusicScheme.shared.score([Row]()) == 0)
+    let details = MusicScheme.shared.scoreDetails([Row]())
+    #expect(details.count == MusicScheme.shared.scoreDetails(rounds).count)
+    #expect(details.allSatisfy { $0.score == 0 })
+  }
 }

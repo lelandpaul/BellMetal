@@ -59,17 +59,32 @@ struct CodableTests {
     }
   }
 
-  @Test("Block round-trips through JSON, and rejects empty or mixed-stage arrays")
+  @Test("Block round-trips through JSON, and rejects stageless empty or mixed-stage arrays")
   func blockRoundTrip() throws {
     let block: Block = ["1234", "2143", "2413"]
     _ = try roundTrip(block)
+    #expect(String(data: try encoder.encode(block), encoding: .utf8) == "[\"1234\",\"2143\",\"2413\"]")
 
     #expect(throws: (any Error).self) {
-      try decoder.decode(Block.self, from: Data("[]".utf8))
+      try decoder.decode(Block.self, from: Data("[]".utf8)) // no stage to take
     }
     #expect(throws: (any Error).self) {
       try decoder.decode(Block.self, from: Data("[\"1234\", \"12345\"]".utf8)) // mixed stages
     }
+    #expect(throws: (any Error).self) {
+      try decoder.decode(Block.self, from: Data("{\"stage\":5,\"rows\":[\"1234\"]}".utf8))
+    }
+  }
+
+  @Test("An empty Block round-trips with its stage", arguments: [Stage.minor, .twentyFour])
+  func emptyBlockRoundTrip(stage: Stage) throws {
+    let empty = try Block([], at: stage)
+    let decoded = try roundTrip(empty)
+    #expect(decoded.isEmpty)
+    #expect(decoded.stage == stage)
+    // The keyed form decodes for a non-empty block too.
+    let keyed = try decoder.decode(Block.self, from: Data("{\"stage\":4,\"rows\":[\"1234\"]}".utf8))
+    #expect(keyed == ["1234"])
   }
 
   @Test("Mask encodes and decodes as its string, and rejects letters outside its stage")
@@ -85,6 +100,14 @@ struct CodableTests {
     }
   }
 
+  @Test("Decoding a Mask with a non-bell character or a repeated bell throws instead of trapping",
+        arguments: ["xxXx", "1-34", "11xx"])
+  func maskDecodeInvalid(string: String) {
+    #expect(throws: DecodingError.self) {
+      try decoder.decode(Mask.self, from: Data("\"\(string)\"".utf8))
+    }
+  }
+
   @Test("PlaceNotation encodes as a stage/notation pair, including the all-cross edge case")
   func placeNotationRoundTrip() throws {
     let pn = try PlaceNotation(string: "x4x4,2")
@@ -94,6 +117,13 @@ struct CodableTests {
     // infer a stage from, which is exactly why encoding includes the stage.
     let cross = try PlaceNotation(string: "x", at: .minimus)
     _ = try roundTrip(cross)
+
+    // Empty notation (from slice) encodes as "" and decodes back, though
+    // PlaceNotation(string: "") throws.
+    for stage: Stage in [.minor, .eighteen] {
+      let empty = try PlaceNotation(string: "x", at: stage).slice(0..<0)
+      #expect(try roundTrip(empty).isEmpty)
+    }
 
     let data = try encoder.encode(pn)
     let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]

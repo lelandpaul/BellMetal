@@ -164,6 +164,7 @@ struct PnParsingTests {
     ("41", nil),
     ("41", Stage.minor),
     ("x3214", Stage.minor),
+    ("531", nil),
   ] as [(String, Stage?)])
   func parseAllPlacesRejectsUnsortedPlaces(pn: String, stage: Stage?) {
     // Each of these alternates odd/even once the external places are added.
@@ -250,5 +251,19 @@ struct PnParsingTests {
     #expect(try PNP.getExplicitStage("F:x1F").0 == .seventeen)
     #expect(try PNP.getExplicitStage("N:x1N").0 == .twentyFour)
     #expect(try PNP.getExplicitStage("no-prefix-here").0 == nil)
+  }
+
+  @Test("On an odd stage a cross makes the last place, and counts as one more bell when inferring")
+  func crossOnOddStage() throws {
+    #expect(try PlaceNotation(string: "x", at: .doubles) == PlaceNotation(string: "5", at: .doubles))
+    #expect(try PlaceNotation(string: "x3").stage == .minimus)
+    #expect(try PlaceNotation(string: "x1x1,5").stage == .minor)
+  }
+
+  @Test("Only a lowercase x is a cross, and place letters are uppercase", arguments: ["X18X18", "x1t"])
+  func caseSensitive(string: String) {
+    #expect(throws: BellMetalError.invalidPlaceNotation) {
+      try PlaceNotation(string: string)
+    }
   }
 }

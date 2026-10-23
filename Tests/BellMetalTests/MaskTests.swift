@@ -34,6 +34,27 @@ struct MaskTests {
     let test: Mask = "1xx2xx38"
     #expect(test.description == "1xx2xx38")
   }
+
+  @Test("A mask's stage is its string's length")
+  func stage() throws {
+    #expect(try Mask(string: "xxxxxx78").stage == .major)
+    #expect(try Mask(string: "x").stage == .one)
+  }
+
+  @Test("A mask made from a row matches that row and no other")
+  func fromRow() {
+    let mask = Mask(Row("2143"))
+    #expect(mask.description == "2143")
+    #expect(mask.matches("2143"))
+    #expect(!mask.matches("1234"))
+  }
+
+  @Test("matching(any:) and count(matchingAny:) with no masks match nothing")
+  func noMasks() throws {
+    let block: Block = ["1234", "2143"]
+    #expect(try block.matching(any: []).isEmpty)
+    #expect(try block.count(matchingAny: []) == 0)
+  }
 }
 
 @Suite("Mask row-generation unit tests")
@@ -61,5 +82,14 @@ struct RowGenTests {
       "1234",
       "1243",
     ])
+  }
+
+  @Test("allMatchingRows() can be used directly in a for loop")
+  func forLoop() {
+    var rows: [Row] = []
+    for row in Mask("x2x4").allMatchingRows() {
+      rows.append(row)
+    }
+    #expect(rows == ["1234", "3214"])
   }
 }

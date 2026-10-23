@@ -23,6 +23,16 @@ public struct PlaceNotation: Sendable {
     self.changes = changes
   }
   
+  /// Parses place notation, e.g. `"x16x16x16,12"`, `"5.1.5.1.5,125"` or
+  /// `"6:x16x16x16,12"`. See the Place Notation Syntax article for the full
+  /// syntax.
+  /// - Parameters:
+  ///   - string: The notation, optionally with a stage prefix (`"6:"`).
+  ///   - stage: The stage, if known. Without it (or a prefix), the stage is
+  ///     inferred from the highest place, which fails for all-cross notation.
+  /// - Throws: `BellMetalError.invalidPlaceNotation` if the string isn't
+  ///   valid notation, has no changes, or has a prefix that disagrees with
+  ///   `stage`.
   public init(string: String, at stage: Stage? = nil) throws {
     let (explicitStage, string) = try PlaceNotationParser.getExplicitStage(string)
     if explicitStage != nil,
@@ -36,19 +46,7 @@ public struct PlaceNotation: Sendable {
   }
 }
 
-extension PlaceNotation: Equatable {
-  public static func == (lhs: PlaceNotation, rhs: PlaceNotation) -> Bool {
-    return lhs.stage == rhs.stage
-    && lhs.changes == rhs.changes
-  }
-}
-
-extension PlaceNotation: Hashable {
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(stage)
-    hasher.combine(changes)
-  }
-}
+extension PlaceNotation: Hashable { }
 
 extension PlaceNotation: ExpressibleByStringLiteral {
   /// Creates place notation from a literal, e.g. "x16x16x16,12", with its
@@ -77,11 +75,18 @@ extension PlaceNotation: Codable {
   /// string>"}`, rather than the internal representation. A keyed structure
   /// (rather than just the notation string) is needed because the stage can't
   /// always be recovered from the notation alone -- e.g. an all-cross
-  /// notation like "x" carries no place numbers to infer a stage from.
+  /// notation like "x" carries no place numbers to infer a stage from. An
+  /// empty notation (from `slice` or `replacing`) round-trips as `""`.
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     let stage = try container.decode(Stage.self, forKey: .stage)
     let notation = try container.decode(String.self, forKey: .notation)
+    if notation.isEmpty {
+      self = stage.usesWideLayout
+        ? PlaceNotation(stage: stage, changes: [WideRawRow]())
+        : PlaceNotation(stage: stage, changes: [RawRow]())
+      return
+    }
     do {
       try self.init(string: notation, at: stage)
     } catch {
@@ -168,22 +173,24 @@ extension PlaceNotation {
 extension PlaceNotation {
   /// When pricking a block, used to determine which of the starting and ending
   /// rows to keep in the result.
-  public enum LeadheadMode {
+  public enum LeadheadMode: Sendable, Hashable {
     case keepFinal, keepInitial, keepBoth, keepNeither
   }
   
   /// When pricking a block, used to set the conditions under which repetition should
   /// stop.
-  /// .times(let n): Stop after n times
+  /// .times(let n): Stop after n times. The notation is always pricked at
+  /// least once, so `.times(0)` pricks one repetition, like `.times(1)`.
   /// .untilRound: Stop when the start and end rows are the same
   /// .untilFalse: Stop when the resulting block contains repeating rows
   /// .untilPosition(bell:position): Until the final leadhead
-  /// has the specified bell in the specified position. (Note: If not paired
-  /// with another condition, may result in an infinite loop. Also, if paired
-  /// with a LeadheadMode that drops the final row, the bell in question may
-  /// not be in the specified position at the end of the returned Block, but
+  /// has the specified bell in the specified position, or comes back to the
+  /// starting row (after which the bell would never get there). (Note: if
+  /// paired with a LeadheadMode that drops the final row, the bell in question
+  /// may not be in the specified position at the end of the returned Block, but
   /// would reach that position if one more change were made.)
-  public enum RepeatCondition {
+  /// Pricking always stops after one repetition of empty notation.
+  public enum RepeatCondition: Sendable, Hashable {
     case times(UInt)
     case untilRound
     case untilFalse
@@ -208,7 +215,8 @@ extension PlaceNotation {
         guard rows.count == rowSet.count else { return false }
       case .untilPosition(let bell, let position):
         guard let bellPos = rows.last?.rawPosition(of: bell.rawValue),
-              bellPos != position - 1
+              bellPos != position - 1,
+              rows.last != rows.first
         else { return false }
       }
     }
@@ -257,6 +265,11 @@ extension PlaceNotation {
     keeping leadheadMode: LeadheadMode,
     repeat repeatConditions: [RepeatCondition]
   ) -> Block {
+    // Empty notation reaches no new row: the start row is also the final
+    // one, so only `.keepNeither` drops it.
+    guard !changes.isEmpty else {
+      return Block(stage: stage, raw: RawBlock(rows: leadheadMode == .keepNeither ? [] : [row]))
+    }
     var rawRows = [row]
     var rawRowsSet = Set(rawRows)
     var lastRow = row
@@ -265,7 +278,7 @@ extension PlaceNotation {
       let newRows = prickOneRepetition(lastRow, changes: changes)
       lastRow = newRows.last ?? lastRow
       rawRows += newRows
-      rawRowsSet.insert(contentsOf: newRows)
+      rawRowsSet.formUnion(newRows)
       repetitions += 1
     } while shouldKeepRepeating(
       rows: rawRows,
@@ -274,6 +287,7 @@ extension PlaceNotation {
       conditions: repeatConditions
     )
     
+    // At least two rows here: the start row and one per change.
     switch leadheadMode {
     case .keepFinal: rawRows.removeFirst()
     case .keepInitial: rawRows.removeLast()
@@ -392,13 +406,15 @@ extension PlaceNotation {
 
   /// Replaces the single change at `index` with `replacement`.
   public func replacing(at index: Int, with replacement: PlaceNotation) throws -> PlaceNotation {
-    try replacing(index..<(index + 1), with: replacement)
+    guard (0..<count).contains(index) else { throw BellMetalError.invalidIndex }
+    return try replacing(index..<(index + 1), with: replacement)
   }
 
   /// Replaces the single change at `index` with the change(s) parsed from
   /// `replacement`, interpreted at this place notation's stage.
   public func replacing(at index: Int, with replacement: String) throws -> PlaceNotation {
-    try replacing(index..<(index + 1), with: replacement)
+    guard (0..<count).contains(index) else { throw BellMetalError.invalidIndex }
+    return try replacing(index..<(index + 1), with: replacement)
   }
 
   /// Replaces the last change with `replacement`. The common case: e.g.
