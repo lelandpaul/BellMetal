@@ -265,7 +265,7 @@ extension PlaceNotation {
       let newRows = prickOneRepetition(lastRow, changes: changes)
       lastRow = newRows.last ?? lastRow
       rawRows += newRows
-      rawRowsSet.insert(contentsOf: newRows)
+      rawRowsSet.formUnion(newRows)
       repetitions += 1
     } while shouldKeepRepeating(
       rows: rawRows,

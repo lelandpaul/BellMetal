@@ -47,14 +47,6 @@ extension Array {
 
 }
 
-extension Set {
-  internal mutating func insert(
-    contentsOf sequence: any Sequence<Element>
-  ) {
-    sequence.forEach { insert($0) }
-  }
-}
-
 extension IteratorProtocol {
   internal func collect() -> [Element] {
     var iteratorCopy = self

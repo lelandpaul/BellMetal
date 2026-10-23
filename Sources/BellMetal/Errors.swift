@@ -25,6 +25,11 @@ public enum BellMetalError: Error, Equatable {
   case invalidIndex
 }
 
+/// `localizedDescription` gives the same text as `description`.
+extension BellMetalError: LocalizedError {
+  public var errorDescription: String? { description }
+}
+
 extension BellMetalError: CustomStringConvertible {
   public var description: String {
     switch self {
