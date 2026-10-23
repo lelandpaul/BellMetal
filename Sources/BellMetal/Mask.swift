@@ -8,27 +8,38 @@ import Foundation
 /// Masks can be `match`ed against some target row, or all matching
 /// rows may be iterated over via `allMatchingRows()`.
 public struct Mask: Sendable {
-  let stage: Stage
+  /// The stage of the rows this mask can match.
+  public let stage: Stage
   let fixedPos: [Int: Bell]
-  
+
   internal init(stage: Stage, fixedPos: [Int: Bell]) {
     self.stage = stage
     self.fixedPos = fixedPos
   }
-  
-  init(string: String) throws {
+
+  /// Creates a mask from its string representation, e.g. "xxxxxx78": one
+  /// character per position, either "x" (open) or a bell. The string's
+  /// length sets the stage.
+  /// - Throws: `BellMetalError.invalidMask` if the length isn't
+  ///   1...`Stage.maxCount`, a character is neither "x" nor a bell of that
+  ///   stage, or the same bell is fixed in two positions.
+  public init(string: String) throws {
     guard (1...Stage.maxCount).contains(string.count) else { throw BellMetalError.invalidMask }
     self.stage = Stage(string.count)
     var fixedPos: [Int: Bell] = [:]
     for (i, c) in string.enumerated() where c != "x" {
-      let bell = Bell(c)
-      guard self.stage.includes(bell) else { throw BellMetalError.invalidMask }
+      guard let bell = Bell(character: c),
+            self.stage.includes(bell),
+            !fixedPos.values.contains(bell)
+      else { throw BellMetalError.invalidMask }
       fixedPos[i+1] = bell
     }
     self.fixedPos = fixedPos
   }
-  
-  init(_ row: Row) {
+
+  /// Creates a mask with every position fixed to the given row's, so it
+  /// matches that row only.
+  public init(_ row: Row) {
     self.stage = row.stage
     self.fixedPos = (1...stage.count).reduce(into: [:]) { dict, new in
       dict[new] = row[new]
@@ -94,34 +105,28 @@ extension Mask: Codable {
 
 extension Block {
   /// Return rows matching at least one of the supplied masks.
-  /// - Parameter masks: The masks to match against.
+  /// - Parameter masks: The masks to match against. If empty, no row matches.
   /// - Returns: Rows that match at least one mask.
+  /// - Throws: `BellMetalError.stageMismatch` if any mask's stage isn't the block's.
   public func matching(any masks: [Mask]) throws -> [Row] {
-    let maskStage = Set(masks.map(\.stage))
-    guard maskStage.count == 1,
-          let maskStage = maskStage.first,
-          maskStage == self.stage
-    else {
+    guard masks.allSatisfy({ $0.stage == self.stage }) else {
       throw BellMetalError.stageMismatch
     }
     return self.filter { row in
-      masks.map { $0.matches(row) }.contains(true)
+      masks.contains { $0.matches(row) }
     }
   }
-  
+
   /// A count of rows matching at least one of the supplied Masks.
-  /// - Parameter masks: Masks to match against.
+  /// - Parameter masks: Masks to match against. If empty, no row matches.
   /// - Returns: An integer count of rows.
+  /// - Throws: `BellMetalError.stageMismatch` if any mask's stage isn't the block's.
   public func count(matchingAny masks: [Mask]) throws -> Int {
-    let maskStage = Set(masks.map(\.stage))
-    guard maskStage.count == 1,
-          let maskStage = maskStage.first,
-          maskStage == self.stage
-    else {
+    guard masks.allSatisfy({ $0.stage == self.stage }) else {
       throw BellMetalError.stageMismatch
     }
     return self.count { row in
-      masks.map { $0.matches(row) }.contains(true)
+      masks.contains { $0.matches(row) }
     }
   }
 }

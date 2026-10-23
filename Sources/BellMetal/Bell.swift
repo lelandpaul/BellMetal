@@ -88,11 +88,15 @@ extension Bell: ExpressibleByStringLiteral {
   }
 
   /// Creates a bell from a single valid bell character. See `init(stringLiteral:)`.
+  /// - Precondition: Traps on any other character, unlike `init?(character:)`.
+  @available(*, deprecated, message: "Traps on an invalid character. Use init?(character:), or a string literal.")
   public init(_ character: Character) {
     self.init(stringLiteral: String(character))
   }
 
   /// Creates a bell from a single valid bell character. See `init(stringLiteral:)`.
+  /// - Precondition: Traps unless `character` is exactly one valid bell character.
+  @available(*, deprecated, message: "Traps on an invalid character. Use init?(character:), or a string literal.")
   public init(_ character: Substring) {
     self.init(stringLiteral: String(character))
   }

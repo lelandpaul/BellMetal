@@ -85,6 +85,14 @@ struct CodableTests {
     }
   }
 
+  @Test("Decoding a Mask with a non-bell character or a repeated bell throws instead of trapping",
+        arguments: ["xxXx", "1-34", "11xx"])
+  func maskDecodeInvalid(string: String) {
+    #expect(throws: DecodingError.self) {
+      try decoder.decode(Mask.self, from: Data("\"\(string)\"".utf8))
+    }
+  }
+
   @Test("PlaceNotation encodes as a stage/notation pair, including the all-cross edge case")
   func placeNotationRoundTrip() throws {
     let pn = try PlaceNotation(string: "x4x4,2")

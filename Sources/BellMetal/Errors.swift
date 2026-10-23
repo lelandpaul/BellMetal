@@ -11,7 +11,8 @@ public enum BellMetalError: Error, Equatable {
   /// A place notation string couldn't be parsed, or its explicit stage
   /// conflicts with one given separately.
   case invalidPlaceNotation
-  /// A mask string named a bell that isn't valid for its (inferred) stage.
+  /// A mask string had the wrong length, a character that isn't "x" or a
+  /// bell of its (inferred) stage, or the same bell in two positions.
   case invalidMask
   /// A bell number or character was out of range, or the bells given don't
   /// form a valid permutation.
