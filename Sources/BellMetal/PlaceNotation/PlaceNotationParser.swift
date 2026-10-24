@@ -206,10 +206,7 @@ extension PlaceNotationParser {
   /// `validateAlternatingParity` and `validatePlaces`) -- e.g. `"128"` on
   /// Major, which has two even places (2 and 8) back to back, or `"18"` on
   /// Minor, which makes a place the stage doesn't have.
-  public static func parseAllPlaces(
-    _ pn: String,
-    at stage: Stage? = nil
-  ) throws -> (Stage, [[Int]]) {
+  public static func parseAllPlaces(_ pn: String, at stage: Stage? = nil) throws -> (Stage, [[Int]]) {
     let changes = try splitAndExpandPalindrome(pn)
       .map(parsePlaces)
     guard !changes.isEmpty else { throw BellMetalError.invalidPlaceNotation }
@@ -255,10 +252,7 @@ extension PlaceNotationParser {
     return (Stage(stageCount), String(pnStr))
   }
   
-  internal static func parseAllChanges(
-    _ pn: String,
-    at stage: Stage? = nil
-  ) throws -> (Stage, PlaceNotation.Changes) {
+  internal static func parseAllChanges(_ pn: String, at stage: Stage? = nil) throws -> (Stage, PlaceNotation.Changes) {
     let (knownStage, places) = try parseAllPlaces(pn, at: stage)
     if knownStage.usesWideLayout {
       return (knownStage, .wide(places.map { changeToRawRow($0, at: knownStage) }))
