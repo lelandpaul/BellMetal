@@ -8,9 +8,14 @@ the library.
 The benchmark source uses only API that BellMetal 1.x and 2.x share, so the
 same code can measure two versions against each other. Benchmarks for stages
 above 16 register only when the BellMetal being measured supports them
-(`Stage(rawValue: 16)` exists). Each benchmark runs at 6, 8, 12 and 16 bells,
+(`Stage(rawValue: 16)` exists). Benchmarks run at 6, 8, 12 and 16 bells,
 and at 17, 18, 22 and 24 where supported, on Plain Bob and 64 seeded random
-rows, in release builds.
+rows, in release builds. A few skip some stages:
+
+- `Row.extend(to: +1)` and `Block.extend(to: +2)` need a stage one or two
+  bells higher, so they skip 24 bells, and 16 bells on 1.x.
+- `MusicScheme.shared.score` runs only at 6 and 8 bells on 1.x, which
+  crashes scoring music from 10 bells up.
 
 ## Requirements
 
