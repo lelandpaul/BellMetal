@@ -49,6 +49,16 @@ struct MaskTests {
     #expect(!mask.matches("1234"))
   }
 
+  @Test("A mask made from a 24-bell row matches that row and not a neighbour")
+  func fromWideRow() {
+    let row: Row = "2143658709TEBADCGFJHLKNM"
+    let mask = Mask(row)
+    #expect(mask.stage == .twentyFour)
+    #expect(mask.description == "2143658709TEBADCGFJHLKNM")
+    #expect(mask.matches(row))
+    #expect(!mask.matches("2143658709TEBADCGFJHLKMN")) // last two swapped
+  }
+
   @Test("matching(any:) and count(matchingAny:) with no masks match nothing")
   func noMasks() throws {
     let block: Block = ["1234", "2143"]
@@ -91,5 +101,15 @@ struct RowGenTests {
       rows.append(row)
     }
     #expect(rows == ["1234", "3214"])
+  }
+
+  @Test("A mask above 16 bells generates every matching row exactly once",
+        arguments: [("1x34567890ETABCDx", 2), ("1234567890ETABxDFGxx", 6)])
+  func wideMask(string: String, expectedCount: Int) throws {
+    let mask = try Mask(string: string)
+    let rows = mask.allMatchingRows().collect()
+    #expect(rows.count == expectedCount)
+    #expect(Set(rows).count == expectedCount)
+    #expect(rows.allSatisfy { $0.stage == mask.stage && mask.matches($0) })
   }
 }

@@ -88,6 +88,27 @@ struct BlockTests {
     #expect(try blockC.isTrue(against: blockB))
   }
 
+  @Test("An internally false block is false against a block it shares no rows with, in both directions")
+  func internallyFalseBlockTruth() throws {
+    let falseBlock: Block = [
+      "1234",
+      "2143",
+      "1234",
+    ]
+    let disjoint: Block = [
+      "4321",
+      "3412",
+    ]
+    #expect(try !falseBlock.isTrue(against: disjoint))
+    #expect(try !disjoint.isTrue(against: falseBlock))
+  }
+
+  @Test("description lists the rows in order inside Block(...)")
+  func description() {
+    let block: Block = ["1234", "2143", "2413"]
+    #expect(block.description == "Block([1234, 2143, 2413])")
+  }
+
   // MARK: - Transposition & extention
 
   @Test("Transposing a block multiplies every row by the transposing row")
@@ -238,6 +259,36 @@ struct BlockTests {
     let back = block.groupByStroke(backstrokeStart: true)
     #expect(back.hand.isEmpty)
     #expect(Array(back.back) == [stage.rounds])
+  }
+
+  @Test("groupByStroke on a narrow block puts alternate rows at each stroke, in order")
+  func groupByStrokeNarrow() {
+    let block: Block = ["12345678", "21436587", "12346578", "21435687", "24136578"]
+    let (hand, back) = block.groupByStroke()
+    #expect(Array(hand) == ["12345678", "12346578", "24136578"])
+    #expect(Array(back) == ["21436587", "21435687"])
+    let swapped = block.groupByStroke(backstrokeStart: true)
+    #expect(Array(swapped.hand) == ["21436587", "21435687"])
+    #expect(Array(swapped.back) == ["12345678", "12346578", "24136578"])
+  }
+
+  @Test("groupByStroke on narrow blocks of even and odd lengths, from either stroke",
+        arguments: [Stage.minimus, .major], 2...5)
+  func groupByStrokeNarrowLengths(stage: Stage, count: Int) {
+    let lead: [Row] = stage == .minimus
+      ? ["1234", "2143", "2413", "4231", "4321"]
+      : ["12345678", "21436587", "24163857", "42618375", "46281735"]
+    let rows = Array(lead[..<count])
+    let block = Block(rows)
+    let first = stride(from: 0, to: count, by: 2).map { rows[$0] }
+    let second = stride(from: 1, to: count, by: 2).map { rows[$0] }
+
+    let (hand, back) = block.groupByStroke()
+    #expect(Array(hand) == first)
+    #expect(Array(back) == second)
+    let swapped = block.groupByStroke(backstrokeStart: true)
+    #expect(Array(swapped.hand) == second)
+    #expect(Array(swapped.back) == first)
   }
 
   @Test("Empty blocks of different stages aren't equal, so equality agrees with hashing")

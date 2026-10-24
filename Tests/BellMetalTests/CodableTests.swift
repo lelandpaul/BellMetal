@@ -59,6 +59,14 @@ struct CodableTests {
     }
   }
 
+  @Test("Decoding a Row with 25 bells or a non-bell character throws",
+        arguments: ["1234567890ETABCDFGHJKLMN1", "12Z4"])
+  func rowDecodeInvalid(string: String) {
+    #expect(throws: DecodingError.self) {
+      try decoder.decode(Row.self, from: Data("\"\(string)\"".utf8))
+    }
+  }
+
   @Test("Block round-trips through JSON, and rejects stageless empty or mixed-stage arrays")
   func blockRoundTrip() throws {
     let block: Block = ["1234", "2143", "2413"]
