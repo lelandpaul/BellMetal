@@ -238,10 +238,7 @@ extension MusicType {
     return (try? rows.count(matchingAny: masks)) ?? 0
   }
   
-  internal static func scoreTenorsReversed(
-    _ rows: Block,
-    backstrokeStart: Bool = false
-  ) -> Int {
+  internal static func scoreTenorsReversed(_ rows: Block, backstrokeStart: Bool = false) -> Int {
     guard rows.stage > .one else { return 0 }
     let (nearTenor, tenor) = rows.stage.tenorPair
     let mask = try? Mask(
