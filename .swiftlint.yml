@@ -6,8 +6,6 @@ excluded:
 
 opt_in_rules:
   - force_unwrapping
-  - weak_delegate
-  - unowned_variable_capture
   - empty_count
 
 # Short names are deliberate: bells (`b5`, `bT`), place notation (`pn`), `to:` labels, operands
