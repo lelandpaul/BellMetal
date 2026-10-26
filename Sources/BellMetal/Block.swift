@@ -264,9 +264,7 @@ extension Block {
   /// start.)
   /// - Returns: Two blocks labeled hand and back. Either can be empty: a
   /// one-row block has no rows at the other stroke.
-  public func groupByStroke(
-    backstrokeStart: Bool = false
-  ) -> (hand: Block, back: Block) {
+  public func groupByStroke(backstrokeStart: Bool = false) -> (hand: Block, back: Block) {
     let (firstBlock, secondBlock) = switch storage {
     case .narrow(let raw): grouped(raw)
     case .wide(let raw): grouped(raw)

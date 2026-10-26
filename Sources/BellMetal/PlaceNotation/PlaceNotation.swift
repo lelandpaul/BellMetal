@@ -197,12 +197,7 @@ extension PlaceNotation {
     case untilPosition(bell: Bell, position: Int)
   }
   
-  private func shouldKeepRepeating<R: RawLayout>(
-    rows: [R],
-    rowSet: Set<R>,
-    repetitions: UInt,
-    conditions: [RepeatCondition]
-  ) -> Bool {
+  private func shouldKeepRepeating<R: RawLayout>(rows: [R], rowSet: Set<R>, repetitions: UInt, conditions: [RepeatCondition]) -> Bool {
     // If empty, do not repeat.
     guard !conditions.isEmpty else { return false }
     for condition in conditions {

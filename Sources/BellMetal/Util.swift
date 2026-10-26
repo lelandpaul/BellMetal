@@ -37,10 +37,7 @@ extension Array {
     return (self.filter(predicate), self.filter { !predicate($0) })
   }
   
-  func partitionMap(
-    on predicate: (Element) -> Bool,
-    applying function: (Self, Self) -> Self
-  ) -> Self {
+  func partitionMap(on predicate: (Element) -> Bool, applying function: (Self, Self) -> Self) -> Self {
     let (left, right) = self.partition(on: predicate)
     return function(left, right)
   }
