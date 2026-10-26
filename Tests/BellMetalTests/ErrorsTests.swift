@@ -68,6 +68,19 @@ struct ErrorsTests {
     }
   }
 
+  @Test("Every error case has its fixed description", arguments: [
+    (BellMetalError.stageMismatch, "Stages don't match."),
+    (.invalidStage, "Invalid stage."),
+    (.invalidPlaceNotation, "Invalid place notation."),
+    (.invalidMask, "Invalid mask."),
+    (.invalidBell, "Invalid bell."),
+    (.inconsistentStageForMusic, "Music can only be assessed if the rows are of the same stage."),
+    (.invalidIndex, "Invalid index."),
+  ])
+  func description(error: BellMetalError, expected: String) {
+    #expect(error.description == expected)
+  }
+
   // MARK: - Mask
 
   @Test("Mask(string:) throws when a letter is out of range for the inferred stage")
